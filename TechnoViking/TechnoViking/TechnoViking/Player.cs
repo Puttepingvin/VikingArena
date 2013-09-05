@@ -24,7 +24,7 @@ using FlatRedBall.Screens;
 
 namespace TechnoViking
 {
-    class Player : GameObject
+    class Player : Actor
     {
         
 
@@ -37,8 +37,20 @@ namespace TechnoViking
         public int keycount = 0;
         private bool locked;
         private bool rotated;
+        Projectile tempprojectile;
+        Beam tempbeam;
+        private bool malive = true;
+        private int score;
+        Vector3 startposition = new Vector3(0, 0, 0);
         
 
+        public bool Alive
+        {
+            get
+                {
+                return malive;
+            }
+        }
 
         public KeyboardState keystate
         {
@@ -54,16 +66,16 @@ namespace TechnoViking
                 return mmousestate;
             }
         }
-        public float CurrentXAcceleration
-        {
-            get;
-            set;
-        }
-        public float CurrentYAcceleration
-        {
-            get;
-            set;
-        }
+        //public float CurrentXAcceleration
+        //{
+        //    get;
+        //    set;
+        //}
+        //public float CurrentYAcceleration
+        //{
+        //    get;
+        //    set;
+        //}
         public float Playerindex
         {
             get;
@@ -83,46 +95,53 @@ namespace TechnoViking
             mkeystate = Keyboard.GetState();
             mmousestate = Mouse.GetState();
             
-                
-
-
-
-            
-
-
-
             if (Keyboard.GetState().IsKeyDown(Keys.Escape))
             {
                 UnloadGame(gameObjects);
             }
-
-
-    
         }
 
         
 
 
-        public void Castspell(int spellindex, List<GameObject> gameObjects, float angle) 
+        public void Castspell(int spellindex, List<GameObject> gameObjects, float angle, List<Projectile> ProjectileList) 
         {
             switch ((int)spellindex)
             {
                 case 0:
-                    gameObjects.Add(new Projectile(game, SpriteManager.AddSprite(Game1.Shadowbolttexture1), this, spellindex, gameObjects, angle));
+                    tempprojectile = new Projectile(game, SpriteManager.AddSprite(Game1.Shadowbolttexture1), this, spellindex, gameObjects, angle);
+                    gameObjects.Add(tempprojectile);
+                    ProjectileList.Add(tempprojectile);
                     break;
                 case 1:
-                    gameObjects.Add(new Projectile(game, SpriteManager.AddSprite(Game1.Fireballtexture1), this, spellindex, gameObjects, angle));
+                    tempprojectile = new Projectile(game, SpriteManager.AddSprite(Game1.Fireballtexture1), this, spellindex, gameObjects, angle);
+                    gameObjects.Add(tempprojectile);
+                    ProjectileList.Add(tempprojectile);
                     break;
                 case 2:
-                    gameObjects.Add(new Beam(game, SpriteManager.AddSprite(Game1.Beamtexture1), this, gameObjects, angle));
+                    tempbeam = new Beam(game, SpriteManager.AddSprite(Game1.Beamtexture1), this, gameObjects, angle);
+                    gameObjects.Add(tempbeam);
                     break;
             }
         }
 
 
-        
 
-        
+
+        public override void Kill(List<GameObject> gameObjects) 
+        {
+            gameObjects.Remove(this);
+            SpriteManager.RemoveSprite(this.Sprite);
+            malive = false;
+        }
+
+        public void Reload(List<GameObject> gameObjects) 
+        {
+            gameObjects.Add(this);
+            SpriteManager.AddSprite(this.Sprite);
+            malive = true;
+            sprite.Position = startposition;
+        }
 
         public bool Locked 
         {
@@ -140,7 +159,6 @@ namespace TechnoViking
         {
             SpriteManager.RemoveSprite(sprite);
             gameObjects.Remove(this);
-
         }
 
     }

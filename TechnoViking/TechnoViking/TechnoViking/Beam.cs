@@ -53,10 +53,7 @@ namespace TechnoViking
             player.Locked = true;
             if (TimeManager.CurrentTime >= sprite.TimeCreated + duration || Mouse.GetState().LeftButton != ButtonState.Pressed) 
             {
-                SpriteManager.RemoveSprite(sprite);
-                gameObjects.Remove(this);
-                player.Locked = false;
-                beamsparks.Kill = true;
+                this.Kill(gameObjects);
             }
             
 
@@ -80,6 +77,14 @@ namespace TechnoViking
             sprite.Position.Y = player.Sprite.Position.Y + offsetY;
             sprite.RotationZ = angle + rotationoffset;
 
+        }
+
+        public override void Kill(List<GameObject> gameObjects) 
+        {
+            SpriteManager.RemoveSprite(sprite);
+            gameObjects.Remove(this);
+            player.Locked = false;
+            beamsparks.Kill(gameObjects);
         }
 
     }

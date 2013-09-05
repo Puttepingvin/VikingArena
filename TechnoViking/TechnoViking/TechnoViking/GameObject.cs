@@ -58,7 +58,25 @@ namespace TechnoViking
             set { sprite = value; }
         }
 
+        public bool CircleCollidesWith(GameObject gameobject) 
+        {
+            float pixelsPerUnit = SpriteManager.Camera.PixelsPerUnitAt(sprite.Z);
+            float distance;
+            float distanceX = sprite.Position.X - gameobject.Sprite.Position.X;
+            float distanceY = sprite.Position.Y - gameobject.Sprite.Position.Y;
+            distance = (float)Math.Sqrt(distanceX*distanceX + distanceY*distanceY);
+            
+
+            if (sprite.Texture.Width / pixelsPerUnit / 2 + gameobject.Sprite.Texture.Width / pixelsPerUnit / 2 > distance)
+            {
+            return true;
+            }
+            else return false;
+        }
+
         public abstract void Update(List<GameObject> gameObjects);
+
+        public abstract void Kill(List<GameObject> gameObjects);
 
     }
 }

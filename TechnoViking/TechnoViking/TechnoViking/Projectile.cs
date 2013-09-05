@@ -32,6 +32,15 @@ namespace TechnoViking
         private float life = .4f;
         Emittor firetail;
         int selectedSpell;
+        private byte mplayerID;
+
+        public byte playerID 
+        {
+            get
+            {
+                return mplayerID;
+            }
+        }
 
 
         public Projectile(Game game, Sprite sprite, Player player, int selectedSpell, List<GameObject> gameObjects, float angle)
@@ -46,7 +55,7 @@ namespace TechnoViking
 
             sprite.Position = player.Sprite.Position;
 
-
+            mplayerID = (byte)player.Playerindex;
 
             sprite.Velocity.X = (float)Math.Cos(angle) * projectilevelocity;
             sprite.Velocity.Y = (float)Math.Sin(angle) * projectilevelocity;
@@ -104,18 +113,7 @@ namespace TechnoViking
 
             if (TimeManager.CurrentTime >= sprite.TimeCreated + life)
             {
-                SpriteManager.RemoveSprite(sprite);
-                gameObjects.Remove(this);
-                if (selectedSpell != 1)
-                {
-                    Emittor explosion = new Emittor(game, SpriteManager.AddSprite(Game1.Pixeltexture), .3f, Color.Tomato, Color.Yellow, Color.Orange,
-                        0.3f, 0.3f, sprite.Position, 3, (0), ((float)Math.PI * 2));
-                    gameObjects.Add(explosion);
-                }
-                if (selectedSpell == 1)
-                {
-                    firetail.Kill = true;
-                }
+                this.Kill(gameObjects);
             }
 
 
@@ -126,6 +124,21 @@ namespace TechnoViking
 
         }
 
+        public override void Kill(List<GameObject> gameObjects) 
+        {
+            SpriteManager.RemoveSprite(sprite);
+            gameObjects.Remove(this);
+            if (selectedSpell != 1)
+            {
+                Emittor explosion = new Emittor(game, SpriteManager.AddSprite(Game1.Pixeltexture), .3f, Color.Tomato, Color.Yellow, Color.Orange,
+                    0.3f, 0.3f, sprite.Position, 3, (0), ((float)Math.PI * 2));
+                gameObjects.Add(explosion);
+            }
+            if (selectedSpell == 1)
+            {
+                firetail.Kill(gameObjects);
+            }
+        }
 
     }
 }

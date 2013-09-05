@@ -41,7 +41,6 @@ namespace TechnoViking
         float particlecount;
         float anglemin;
         float anglemax;
-        bool kill;
         bool moving;
         GameObject gameObject;
         bool multiplespawnpoints;
@@ -125,10 +124,10 @@ namespace TechnoViking
 
             }
 
-            if (TimeManager.CurrentTime >= sprite.TimeCreated + emmissionduration || kill)
+            if (TimeManager.CurrentTime >= sprite.TimeCreated + emmissionduration)
             {
-                SpriteManager.RemoveSprite(sprite);
-                gameObjects.Remove(this);
+                this.Kill(gameObjects);
+
             }
 
         }
@@ -185,10 +184,10 @@ namespace TechnoViking
             gameObjects.Add(particle);
         }
 
-        public bool Kill 
+        public override void Kill(List<GameObject> gameObjects) 
         {
-            get { return kill; }
-            set { kill = value; }
+            SpriteManager.RemoveSprite(sprite);
+            gameObjects.Remove(this);
         }
     }
 }

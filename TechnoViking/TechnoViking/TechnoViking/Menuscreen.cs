@@ -59,9 +59,16 @@ namespace TechnoViking
             gameObjects.Add(multiplayerarena1);
             this.Kill(gameObjects);
         }
+        public void CreateJoinScreen(List<GameObject> gameObjects)
+        {
+            JoinGameScreen joinScreen = new JoinGameScreen(game, dummysprite, gameObjects);
+            gameObjects.Add(joinScreen);
+            this.Kill(gameObjects);
+        }
 
 
-        private void Kill(List<GameObject> gameObjects) 
+
+        public override void Kill(List<GameObject> gameObjects) 
         {
             foreach (GameObject g in new List<GameObject>(gameObjects))
             {
@@ -72,7 +79,7 @@ namespace TechnoViking
 
                 }
             }
-
+            gameObjects.Remove(this);
 
         }
 

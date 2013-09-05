@@ -10,6 +10,10 @@ namespace TechnoViking.GlobalData
         Player1,
         Player2,
         Spell,
+        Collision,
+        Action,
         PlayerID
     }
+
+
 }

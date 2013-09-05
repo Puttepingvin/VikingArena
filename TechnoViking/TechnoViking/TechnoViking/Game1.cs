@@ -24,7 +24,25 @@ namespace TechnoViking
 {
     public class Game1 : Microsoft.Xna.Framework.Game
     {
-        
+        /*
+         TODO:
+         Clean up code
+         Comment code
+         Add collision
+         Add spellcasting
+         Loock player during beam
+         Add 8 player capability
+         Update net code (in preogress)
+         * Actor class
+         * abstract send in actor classes
+         Update Menu (in progress) 
+         
+         
+         */
+
+
+
+
         GraphicsDeviceManager graphics;
         List<GameObject> gameObjects;
         public const string PlayerTexture1 = "/Content/viking1.png";
@@ -93,7 +111,6 @@ namespace TechnoViking
             gameObjects.Add(player1);
             player1.Sprite.ScaleX = 1.3f;
             player1.Sprite.ScaleY = 1.3f;
-
         }
 
         
@@ -107,8 +124,6 @@ namespace TechnoViking
             {
                 g.Update(gameObjects);
             }
-
-            
 
             FlatRedBall.Screens.ScreenManager.Activity();
 

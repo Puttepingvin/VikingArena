@@ -37,7 +37,7 @@ namespace TechnoViking
         private NetPeer mPeer;
         private NetPeerConfiguration mConfig;
         private AgentRole mRole;
-        private int port = 25565;
+        private int port = 6112;
         private NetOutgoingMessage mOutgoingMessage;
         private List<NetIncomingMessage> mIncomingMessages;
         byte nextPlayerID = 1;
@@ -151,7 +151,6 @@ namespace TechnoViking
                             idMessage.Write((byte)MessageType.PlayerID);
                             idMessage.Write(nextPlayerID++);
                             mPeer.SendMessage(idMessage, incomingMessage.SenderConnection, NetDeliveryMethod.ReliableOrdered);
-
                             IsPlayerConnected = true;
                         }
                         break;

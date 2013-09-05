@@ -40,12 +40,12 @@ namespace TechnoViking
             float texturePixelWidth = sprite.Texture.Width;
             float texturePixelHeight = sprite.Texture.Height;
 
-            //Now, we need to find out how many pixels per unit there are in our view at the Sprite's Z position:
-            float pixelsPerUnit = SpriteManager.Camera.PixelsPerUnitAt(sprite.Z);
+            ////Now, we need to find out how many pixels per unit there are in our view at the Sprite's Z position:
+            //float pixelsPerUnit = SpriteManager.Camera.PixelsPerUnitAt(sprite.Z);
 
-            //Now, we just have to use those two values to set the scale.
-            sprite.ScaleX = .5f * texturePixelWidth / pixelsPerUnit;
-            sprite.ScaleY = .5f * texturePixelHeight / pixelsPerUnit;
+            ////Now, we just have to use those two values to set the scale.
+            //sprite.ScaleX = .5f * texturePixelWidth / pixelsPerUnit;
+            //sprite.ScaleY = .5f * texturePixelHeight / pixelsPerUnit;
         }
 
         public override void Update(List<GameObject> gameObjects)
@@ -82,7 +82,7 @@ namespace TechnoViking
             player1.Sprite.ScaleX = 1.3f;
             player1.Sprite.ScaleY = 1.3f;
         }
-        private void UnloadMenu(List<GameObject> gameObjects)
+        public override void Kill(List<GameObject> gameObjects)
         {
             
         }

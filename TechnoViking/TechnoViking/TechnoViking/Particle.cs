@@ -42,8 +42,7 @@ namespace TechnoViking
         {
             if (TimeManager.CurrentTime >= sprite.TimeCreated + life)
             {
-                SpriteManager.RemoveSprite(sprite);
-                gameObjects.Remove(this);
+                this.Kill(gameObjects);
                 
             }
            
@@ -51,10 +50,10 @@ namespace TechnoViking
 
         }
 
-
-
-
-
-
+        public override void Kill(List<GameObject> gameObjects)
+        {
+            SpriteManager.RemoveSprite(sprite);
+            gameObjects.Remove(this);
+        }
     }
 }

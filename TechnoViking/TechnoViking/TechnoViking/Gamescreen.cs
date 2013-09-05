@@ -25,11 +25,10 @@ using FlatRedBall.Math.Geometry;
 using FlatRedBall.Screens;
 namespace TechnoViking
 {
-    
+    //Leta upp vart koden där den nya spelaren connectar ligger och cleara projektillistan där
     class Gamescreen : GameObject
     {
         NetworkAgent mAgent;
-        int spellID;
         Player player1;
         Player player2;
         float offset = (float)Math.PI / 2.0f;
@@ -37,26 +36,42 @@ namespace TechnoViking
         const float accelerationspeed = 30.0f;
         const float breakacc = 20.0f;
         List<Player> PlayerList = new List<Player>();
+        List<Player> Aliveplayers = new List<Player>();
+        List<Projectile> ProjectileList = new List<Projectile>();
         byte PlayerID = 0;
         bool edown = false;
         float scrollvalue = 0.0f;
         private bool mouseup;
         private Spellbook selectedSpell = Spellbook.shadowbolt;
+        private List<int> scores = new List<int>();
         bool sendspell;
         float angle;
+        string ip = "81.230.67.177";
 
         public Gamescreen(Game game, Sprite sprite, List<GameObject> gameObjects)
             : base(game, sprite) 
         {
             
             StartServerAndClient();
+            CreatePlayers(gameObjects);
+
+        }
+
+        private void CreatePlayers(List<GameObject> gameObjects) 
+        {
             player1 = new Player(game, SpriteManager.AddSprite(Game1.PlayerTexture1));
+            player1.Sprite.Position.X += 4;
             gameObjects.Add(player1);
             PlayerList.Add(player1);
+            Aliveplayers.Add(player1);
+
 
             player2 = new Player(game, SpriteManager.AddSprite(Game1.PlayerTexture1));
+            player2.Sprite.Position.X -= 4;
             gameObjects.Add(player2);
             PlayerList.Add(player2);
+            Aliveplayers.Add(player2);
+
             AssignPlayerIndices();
         }
 
@@ -74,6 +89,36 @@ namespace TechnoViking
             Spellcasting(gameObjects);
             ServerAndClientActivity(gameObjects);
             Rotation();
+            
+                if (Aliveplayers.Count < 2)
+                {
+                    StartNewRound(gameObjects);
+                }
+            
+
+        }
+
+        private void StartNewRound(List<GameObject> gameObjects)
+        {
+            ProjectileList.Clear();
+            foreach (Player p in PlayerList)
+            {
+                p.Kill(gameObjects);
+            }
+            PlayerList.Clear();
+            Aliveplayers.Clear();
+            CreatePlayers(gameObjects);
+            //if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server)
+            //{
+
+            //    foreach (NetConnection Player in mAgent.Connections)
+            //    {
+            //        mAgent.WriteMessage((byte)MessageType.Action);
+            //        mAgent.WriteMessage((byte)ActionType.ServerRestart);
+            //        mAgent.SendMessage(Player, true);
+            //    }
+            //}
+            
         }
 
         private void PlayerMovement()
@@ -279,7 +324,7 @@ namespace TechnoViking
                 mouseup = false;
                
                     
-                    PlayerList[PlayerID].Castspell((int)selectedSpell, gameObjects, angle);
+                    PlayerList[PlayerID].Castspell((int)selectedSpell, gameObjects, angle, ProjectileList);
                     sendspell = true;
                 
                     
@@ -294,6 +339,41 @@ namespace TechnoViking
             else sendspell = false;
         }
 
+        private void CollisionActivity(List<GameObject> gameObjects)
+        {
+
+            foreach (Player pl in new List<Player>(Aliveplayers))
+            {
+                foreach (Projectile pr in new List<Projectile>(ProjectileList))
+                {
+                   if (pl.CircleCollidesWith(pr))
+                   {
+                       if (pl.Playerindex != pr.playerID)
+                       {
+                           SendCollision((byte)pl.Playerindex, (byte)ProjectileList.IndexOf(pr), (byte)pr.playerID);
+                           pl.Kill(gameObjects);
+                           pr.Kill(gameObjects);
+                           ProjectileList.Remove(pr);
+                           Aliveplayers.Remove(pl);
+                       }
+                   }
+                }
+            }
+
+        }
+
+        private void SendCollision(byte playerindex, byte projectileindex, byte spellcaster)
+        {
+            foreach (NetConnection Player in mAgent.Connections)
+            {
+                mAgent.WriteMessage((byte)MessageType.Collision);
+                mAgent.WriteMessage(playerindex);
+                mAgent.WriteMessage(projectileindex);
+                mAgent.WriteMessage(spellcaster);
+                mAgent.SendMessage(Player);
+            }
+        }
+
         private void StartServerAndClient()
         {
             if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server)
@@ -304,9 +384,16 @@ namespace TechnoViking
             else if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Client)
             {
                 mAgent = new NetworkAgent(AgentRole.Client, "VikingArcade");
-
                 //mAgent.forwardport();
-                mAgent.Connect("81.230.67.177");
+                mAgent.Connect(ip);
+
+                System.Threading.Thread.Sleep(500);
+                
+                mAgent.WriteMessage((byte)MessageType.Action);
+                mAgent.WriteMessage((byte)ActionType.ServerRestart);
+                mAgent.SendMessage(mAgent.Connections[0], true);
+                
+                
             }
         }
 
@@ -381,9 +468,26 @@ namespace TechnoViking
                     break;
 
                 case (byte)MessageType.Spell:
-                    
-                    
-                    PlayerList[incomingMessage.ReadByte()].Castspell(incomingMessage.ReadInt16(), gameObjects, incomingMessage.ReadFloat());
+                    PlayerList[incomingMessage.ReadByte()].Castspell(incomingMessage.ReadInt16(), gameObjects, incomingMessage.ReadFloat(), ProjectileList);
+                    break;
+
+                case (byte)MessageType.Collision:
+                    byte playerindex = incomingMessage.ReadByte();
+                    byte projectileindex = incomingMessage.ReadByte();
+                    byte spellcaster = incomingMessage.ReadByte();
+                    PlayerList[playerindex].Kill(gameObjects);
+                    ProjectileList[projectileindex].Kill(gameObjects);
+                    ProjectileList.RemoveAt(projectileindex);
+                    Aliveplayers.Remove(PlayerList[playerindex]);
+                    break;
+
+                case (byte)MessageType.Action:
+                    switch (incomingMessage.ReadByte()) 
+                    {
+                        case (byte)ActionType.ServerRestart:
+                            StartNewRound(gameObjects);
+                        break;
+                    }
                     break;
 
 
@@ -423,7 +527,7 @@ namespace TechnoViking
                         PlayerList[(byte)MessageType.Player2].desiredRotation = incomingMessage.ReadFloat(); 
                         break;
                     case (byte)MessageType.Spell:
-                        PlayerList[incomingMessage.ReadByte()].Castspell(incomingMessage.ReadInt16(), gameObjects, incomingMessage.ReadFloat());
+                        PlayerList[incomingMessage.ReadByte()].Castspell(incomingMessage.ReadInt16(), gameObjects, incomingMessage.ReadFloat(), ProjectileList);
                         
                         ////If dashed was pressed
                         //if (incomingMessage.ReadBoolean())
@@ -434,16 +538,24 @@ namespace TechnoViking
                         //}
 
                         break;
+                    case (byte)MessageType.Action:
+                        switch (incomingMessage.ReadByte())
+                        {
+                            case (byte)ActionType.ServerRestart:
+                                StartNewRound(gameObjects);
+                                break;
+                        }
+                        break;
                 } 
 		    }
 	    
 
-	    //PHYSICS AND OTHER LOGIC
+	        //PHYSICS AND OTHER LOGIC
             playermovement();
-            if (PlayerList[(byte)MessageType.Player2].desiredRotation == float.MinValue) 
+            if (PlayerList[(byte)MessageType.Player2].desiredRotation == float.MinValue) //Försvinner när koden uppdaterats till att förutsäga clientside
                 PlayerList[(byte)MessageType.Player2].Sprite.RotationZ = (float)Math.Atan2(PlayerList[(byte)MessageType.Player2].Sprite.Velocity.Y, PlayerList[(byte)MessageType.Player2].Sprite.Velocity.X) + offset;
             else PlayerList[(byte)MessageType.Player2].Sprite.RotationZ = PlayerList[(byte)MessageType.Player2].desiredRotation + offset;
-        //CollisionActivity();
+            CollisionActivity(gameObjects);
 
             //Send the message to each player (client)
             foreach (NetConnection Player in mAgent.Connections)
@@ -472,8 +584,9 @@ namespace TechnoViking
                     mAgent.WriteMessage(PlayerID);
                     mAgent.WriteMessage((Int16)selectedSpell);
                     mAgent.WriteMessage(angle);
-                    mAgent.SendMessage(mAgent.Connections[0]);
+                    mAgent.SendMessage(Player);
                 }
+
 
                 //mAgent.WriteMessage((byte)MessageType.Scores);
                 //mAgent.WriteMessage((byte)ScoreHudInstance.Score1);
@@ -482,7 +595,7 @@ namespace TechnoViking
             }
         }
 
-        private void Kill() 
+        public override void Kill(List<GameObject> gameObjects) 
         {
             mAgent.Shutdown();
         }
