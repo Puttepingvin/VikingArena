@@ -28,15 +28,14 @@ namespace TechnoViking
          TODO:
          Clean up code
          Comment code
-         Add collision
-         Add spellcasting
+         Improve spellcasting
          Loock player during beam
-         Add 8 player capability
-         Update net code (in preogress)
+         Add 8 player capability (in progress)
+         Update net code
          * Actor class
          * abstract send in actor classes
-         Update Menu (in progress) 
-         
+         Update Menu
+         Save r^2
          
          */
 

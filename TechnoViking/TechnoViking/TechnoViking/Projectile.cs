@@ -22,7 +22,7 @@ using FlatRedBall.Screens;
 
 namespace TechnoViking
 {
-    class Projectile : GameObject
+    class Projectile : Actor
     {
         private Sprite sprite;
         private const float projectilevelocity = 20.0f;
@@ -72,11 +72,10 @@ namespace TechnoViking
             //sprite.ScaleX = .5f * texturePixelWidth / pixelsPerUnit;
             //sprite.ScaleY = .5f * texturePixelHeight / pixelsPerUnit;
 
-            offsetX = (texturePixelWidth / pixelsPerUnit) / 2 * (float)Math.Cos(angle);
-            offsetY = (texturePixelHeight / pixelsPerUnit) / 2 * (float)Math.Sin(angle);
+            offsetX = ((texturePixelWidth + player.Sprite.Texture.Width) / pixelsPerUnit) / 2 * (float)Math.Cos(angle);
+            offsetY = ((texturePixelHeight + player.Sprite.Texture.Width) / pixelsPerUnit) / 2 * (float)Math.Sin(angle);
             sprite.Position.X = player.Sprite.Position.X + offsetX;
             sprite.Position.Y = player.Sprite.Position.Y + offsetY;
-            startingposition = sprite.Position;
             this.selectedSpell = selectedSpell;
             if (selectedSpell == 1)
             {

@@ -25,19 +25,20 @@ using FlatRedBall.Math.Geometry;
 using FlatRedBall.Screens;
 namespace TechnoViking
 {
-    //Leta upp vart koden där den nya spelaren connectar ligger och cleara projektillistan där
+    /// <summary>
+    /// BUGS:
+    /// everything doesn't respawn clientside
+    /// </summary>
     class Gamescreen : GameObject
     {
         NetworkAgent mAgent;
-        Player player1;
-        Player player2;
+        Player tempplayer;
         float offset = (float)Math.PI / 2.0f;
         const float speedLimit = 20.0f;
         const float accelerationspeed = 30.0f;
         const float breakacc = 20.0f;
         List<Player> PlayerList = new List<Player>();
         List<Player> Aliveplayers = new List<Player>();
-        List<Projectile> ProjectileList = new List<Projectile>();
         byte PlayerID = 0;
         bool edown = false;
         float scrollvalue = 0.0f;
@@ -47,30 +48,38 @@ namespace TechnoViking
         bool sendspell;
         float angle;
         string ip = "81.230.67.177";
+        //byte oldconnectionammount;
+        byte Playercount;
+        double roundstarted;
 
         public Gamescreen(Game game, Sprite sprite, List<GameObject> gameObjects)
             : base(game, sprite) 
         {
             
             StartServerAndClient();
-            CreatePlayers(gameObjects);
+            //CreatePlayers(gameObjects);
 
         }
 
-        private void CreatePlayers(List<GameObject> gameObjects) 
+        private void CreatePlayers(List<GameObject> gameObjects)
         {
-            player1 = new Player(game, SpriteManager.AddSprite(Game1.PlayerTexture1));
-            player1.Sprite.Position.X += 4;
-            gameObjects.Add(player1);
-            PlayerList.Add(player1);
-            Aliveplayers.Add(player1);
+            for (byte i = 0; i < Playercount; i++)
+            {
+
+                tempplayer = new Player(game, SpriteManager.AddSprite(Game1.PlayerTexture1));
+                tempplayer.Sprite.Position.X += -16 + (i%3*16);
+                tempplayer.Sprite.Position.Y -= -14 + ((byte)(i/3) * 14);
+                gameObjects.Add(tempplayer);
+                PlayerList.Add(tempplayer);
+                Aliveplayers.Add(tempplayer);
+            }
 
 
-            player2 = new Player(game, SpriteManager.AddSprite(Game1.PlayerTexture1));
-            player2.Sprite.Position.X -= 4;
-            gameObjects.Add(player2);
-            PlayerList.Add(player2);
-            Aliveplayers.Add(player2);
+            //player2 = new Player(game, SpriteManager.AddSprite(Game1.PlayerTexture1));
+            //player2.Sprite.Position.X -= 8;
+            //gameObjects.Add(player2);
+            //PlayerList.Add(player2);
+            //Aliveplayers.Add(player2);
 
             AssignPlayerIndices();
         }
@@ -85,39 +94,47 @@ namespace TechnoViking
 
         public override void Update(List<GameObject> gameObjects)
         {
-            PlayerMovement();
-            Spellcasting(gameObjects);
+            if (PlayerList.Count > PlayerID)
+            {
+                PlayerMovement();
+                Spellcasting(gameObjects);
+                Rotation();
+            }
             ServerAndClientActivity(gameObjects);
-            Rotation();
-            
-                if (Aliveplayers.Count < 2)
-                {
-                    StartNewRound(gameObjects);
-                }
+
+
             
 
         }
 
         private void StartNewRound(List<GameObject> gameObjects)
         {
-            ProjectileList.Clear();
             foreach (Player p in PlayerList)
             {
                 p.Kill(gameObjects);
             }
+            foreach (GameObject g in new List<GameObject>(gameObjects)) 
+            {
+                if (g is Projectile) 
+                {
+                    g.Kill(gameObjects);
+                }
+            }
             PlayerList.Clear();
             Aliveplayers.Clear();
             CreatePlayers(gameObjects);
-            //if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server)
-            //{
+            if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server)
+            {
 
-            //    foreach (NetConnection Player in mAgent.Connections)
-            //    {
-            //        mAgent.WriteMessage((byte)MessageType.Action);
-            //        mAgent.WriteMessage((byte)ActionType.ServerRestart);
-            //        mAgent.SendMessage(Player, true);
-            //    }
-            //}
+                foreach (NetConnection Player in mAgent.Connections)
+                {
+                    mAgent.WriteMessage((byte)MessageType.Action);
+                    mAgent.WriteMessage((byte)ActionType.ServerRestart);
+                    mAgent.WriteMessage((byte)mAgent.Connections.Count + 1);
+                    mAgent.SendMessage(Player, true);
+                }
+            }
+            roundstarted = TimeManager.CurrentTime;
             
         }
 
@@ -293,7 +310,7 @@ namespace TechnoViking
 
 
 
-            if (player1.mousestate.ScrollWheelValue > scrollvalue || (player1.keystate.IsKeyDown(Keys.E) && !edown))
+            if (PlayerList[PlayerID].mousestate.ScrollWheelValue > scrollvalue || (PlayerList[PlayerID].keystate.IsKeyDown(Keys.E) && !edown))
             {
                 edown = true;
                 if ((int)selectedSpell < Enum.GetNames(typeof(Spellbook)).Length - 1)
@@ -302,9 +319,9 @@ namespace TechnoViking
                 }
                 else selectedSpell = 0;
             }
-            else if (player1.keystate.IsKeyUp(Keys.E)) edown = false;
+            else if (PlayerList[PlayerID].keystate.IsKeyUp(Keys.E)) edown = false;
 
-            if (player1.mousestate.ScrollWheelValue < scrollvalue)
+            if (PlayerList[PlayerID].mousestate.ScrollWheelValue < scrollvalue)
             {
                 if ((int)selectedSpell > 0)
                 {
@@ -313,9 +330,9 @@ namespace TechnoViking
                 else selectedSpell = (Spellbook)Enum.GetNames(typeof(Spellbook)).Length - 1;
             }
 
-            scrollvalue = player1.mousestate.ScrollWheelValue;
+            scrollvalue = PlayerList[PlayerID].mousestate.ScrollWheelValue;
 
-            if (player1.mousestate.LeftButton == ButtonState.Pressed && mouseup == true)
+            if (PlayerList[PlayerID].mousestate.LeftButton == ButtonState.Pressed && mouseup == true)
             {
                 float worldX = GuiManager.Cursor.WorldXAt(PlayerList[PlayerID].Sprite.Z);
                 float worldY = GuiManager.Cursor.WorldYAt(PlayerList[PlayerID].Sprite.Z);
@@ -324,14 +341,14 @@ namespace TechnoViking
                 mouseup = false;
                
                     
-                    PlayerList[PlayerID].Castspell((int)selectedSpell, gameObjects, angle, ProjectileList);
+                    PlayerList[PlayerID].Castspell((int)selectedSpell, gameObjects, angle);
                     sendspell = true;
                 
                     
 
                 //player1.Castspell((int)selectedSpell, gameObjects);
             }
-            else if (player1.mousestate.LeftButton == ButtonState.Released)
+            else if (PlayerList[PlayerID].mousestate.LeftButton == ButtonState.Released)
             {
                 mouseup = true;
                 sendspell = false;
@@ -344,32 +361,30 @@ namespace TechnoViking
 
             foreach (Player pl in new List<Player>(Aliveplayers))
             {
-                foreach (Projectile pr in new List<Projectile>(ProjectileList))
+                foreach (GameObject g in new List<GameObject>(gameObjects))
                 {
-                   if (pl.CircleCollidesWith(pr))
-                   {
-                       if (pl.Playerindex != pr.playerID)
-                       {
-                           SendCollision((byte)pl.Playerindex, (byte)ProjectileList.IndexOf(pr), (byte)pr.playerID);
-                           pl.Kill(gameObjects);
-                           pr.Kill(gameObjects);
-                           ProjectileList.Remove(pr);
-                           Aliveplayers.Remove(pl);
-                       }
-                   }
+                    if (g is Projectile)
+                    {
+                        if (pl.CircleCollidesWith(g))
+                        {
+                                SendCollision((byte)pl.Playerindex);
+                                pl.Kill(gameObjects);
+                                g.Kill(gameObjects);
+                                Aliveplayers.Remove(pl);
+                            
+                        }
+                    }
                 }
             }
 
         }
 
-        private void SendCollision(byte playerindex, byte projectileindex, byte spellcaster)
+        private void SendCollision(byte playerindex)
         {
             foreach (NetConnection Player in mAgent.Connections)
             {
                 mAgent.WriteMessage((byte)MessageType.Collision);
                 mAgent.WriteMessage(playerindex);
-                mAgent.WriteMessage(projectileindex);
-                mAgent.WriteMessage(spellcaster);
                 mAgent.SendMessage(Player);
             }
         }
@@ -402,6 +417,7 @@ namespace TechnoViking
             if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server)
             {
                 ServerActivity(gameObjects);
+                Playercount = (byte)(mAgent.Connections.Count + 1);
             }
             else if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Client)
             {
@@ -418,14 +434,17 @@ namespace TechnoViking
                 //SEND INPUT
                 if (mAgent.IsPlayerConnected)
                 {
-                    mAgent.WriteMessage(PlayerID);
-                    mAgent.WriteMessage(PlayerList[PlayerID].goalVelocityX);
-                    mAgent.WriteMessage(PlayerList[PlayerID].goalVelocityY);
-                    mAgent.WriteMessage(PlayerList[PlayerID].desiredRotation);
-                    //mAgent.WriteMessage(PlayerList[PlayerID].DashPressed);
-                    ////mAgent.WriteMessage(PlayerList[PlayerID].Speed);
-                    //mAgent.WriteMessage(PlayerList[PlayerID].Sprite.RotationZ);
-                    mAgent.SendMessage(mAgent.Connections[0]);
+                    if (PlayerList.Count > PlayerID)
+                    {
+                        mAgent.WriteMessage(PlayerID);
+                        mAgent.WriteMessage(PlayerList[PlayerID].goalVelocityX);
+                        mAgent.WriteMessage(PlayerList[PlayerID].goalVelocityY);
+                        mAgent.WriteMessage(PlayerList[PlayerID].desiredRotation);
+                        //mAgent.WriteMessage(PlayerList[PlayerID].DashPressed);
+                        ////mAgent.WriteMessage(PlayerList[PlayerID].Speed);
+                        //mAgent.WriteMessage(PlayerList[PlayerID].Sprite.RotationZ);
+                        mAgent.SendMessage(mAgent.Connections[0]);
+                    }
 
                     if (sendspell)
                     {
@@ -447,44 +466,68 @@ namespace TechnoViking
             {
             // server sent a data message
             byte type = incomingMessage.ReadByte();
-
+                for (byte i = 0; i < PlayerList.Count; i++)
+                {
+                    if (type == i)
+                    {
+                        PlayerList[i].Sprite.X = incomingMessage.ReadFloat();
+                        PlayerList[i].Sprite.Y = incomingMessage.ReadFloat();
+                        PlayerList[i].Sprite.RotationZ = incomingMessage.ReadFloat();
+                    }
+                }
                 switch (type)
                 {
-                case (byte)MessageType.Player1:
-                    PlayerList[(byte)MessageType.Player1].Sprite.X = incomingMessage.ReadFloat();
-                    PlayerList[(byte)MessageType.Player1].Sprite.Y = incomingMessage.ReadFloat();
-                    PlayerList[(byte)MessageType.Player1].Sprite.RotationZ = incomingMessage.ReadFloat();
-                    //PlayerList[(byte)MessageType.Player1].CooldownCircleRadius = incomingMessage.ReadFloat();
-                    //PlayerList[(byte)MessageType.Player1].DashPressed = incomingMessage.ReadBoolean();
-                    break;
+                //case (byte)MessageType.Player1:
+                //    PlayerList[(byte)MessageType.Player1].Sprite.X = incomingMessage.ReadFloat();
+                //    PlayerList[(byte)MessageType.Player1].Sprite.Y = incomingMessage.ReadFloat();
+                //    PlayerList[(byte)MessageType.Player1].Sprite.RotationZ = incomingMessage.ReadFloat();
+                //    //PlayerList[(byte)MessageType.Player1].CooldownCircleRadius = incomingMessage.ReadFloat();
+                //    //PlayerList[(byte)MessageType.Player1].DashPressed = incomingMessage.ReadBoolean();
+                //    break;
 
-                case (byte)MessageType.Player2:
-                    PlayerList[(byte)MessageType.Player2].Sprite.X = incomingMessage.ReadFloat();
-                    PlayerList[(byte)MessageType.Player2].Sprite.Y = incomingMessage.ReadFloat();
-                    PlayerList[(byte)MessageType.Player2].Sprite.RotationZ = incomingMessage.ReadFloat();
-                    //PlayerBallList[(byte)MessageType.Player2].CooldownCircleRadius = incomingMessage.ReadFloat();
-                    //PlayerBallList[(byte)MessageType.Player2].DashPressed = incomingMessage.ReadBoolean();
+                //case (byte)MessageType.Player2:
+                //    PlayerList[(byte)MessageType.Player2].Sprite.X = incomingMessage.ReadFloat();
+                //    PlayerList[(byte)MessageType.Player2].Sprite.Y = incomingMessage.ReadFloat();
+                //    PlayerList[(byte)MessageType.Player2].Sprite.RotationZ = incomingMessage.ReadFloat();
+                //    //PlayerBallList[(byte)MessageType.Player2].CooldownCircleRadius = incomingMessage.ReadFloat();
+                //    //PlayerBallList[(byte)MessageType.Player2].DashPressed = incomingMessage.ReadBoolean();
 
-                    break;
+                //    break;
 
                 case (byte)MessageType.Spell:
-                    PlayerList[incomingMessage.ReadByte()].Castspell(incomingMessage.ReadInt16(), gameObjects, incomingMessage.ReadFloat(), ProjectileList);
+                        byte tPlayerID = incomingMessage.ReadByte();
+                        if (tPlayerID != PlayerID)
+                        {
+                            PlayerList[tPlayerID].Castspell(incomingMessage.ReadInt16(), gameObjects, incomingMessage.ReadFloat());
+                        }
                     break;
 
                 case (byte)MessageType.Collision:
                     byte playerindex = incomingMessage.ReadByte();
-                    byte projectileindex = incomingMessage.ReadByte();
-                    byte spellcaster = incomingMessage.ReadByte();
-                    PlayerList[playerindex].Kill(gameObjects);
-                    ProjectileList[projectileindex].Kill(gameObjects);
-                    ProjectileList.RemoveAt(projectileindex);
-                    Aliveplayers.Remove(PlayerList[playerindex]);
+                    if (roundstarted + 1 < TimeManager.CurrentTime)
+                    {
+                        PlayerList[playerindex].Kill(gameObjects);
+                        foreach (GameObject g in new List<GameObject>(gameObjects))
+                        {
+                            if (g is Actor)
+                            {
+                                if (g.CircleCollidesWith(PlayerList[playerindex]))
+                                {
+                                    g.Kill(gameObjects);
+                                }
+                            }
+                        }
+                        Aliveplayers.Remove(PlayerList[playerindex]);
+                    }
+                    
                     break;
 
                 case (byte)MessageType.Action:
                     switch (incomingMessage.ReadByte()) 
                     {
                         case (byte)ActionType.ServerRestart:
+
+                            Playercount = incomingMessage.ReadByte();
                             StartNewRound(gameObjects);
                         break;
                     }
@@ -518,17 +561,34 @@ namespace TechnoViking
 		    if (incomingMessage.MessageType == NetIncomingMessageType.Data)
 		    {
                 byte type = incomingMessage.ReadByte();
-
+                        for (byte i = 0; i < PlayerList.Count; i++)
+                        {
+                            if (type == i)
+                            {
+                                PlayerList[i].goalVelocityX = incomingMessage.ReadFloat();
+                                PlayerList[i].goalVelocityY = incomingMessage.ReadFloat();
+                                PlayerList[i].desiredRotation = incomingMessage.ReadFloat();
+                                if (PlayerList[i].desiredRotation == float.MinValue) //Försvinner när koden uppdaterats till att förutsäga clientside
+                                    PlayerList[i].Sprite.RotationZ = (float)Math.Atan2(PlayerList[(byte)MessageType.Player2].Sprite.Velocity.Y, PlayerList[(byte)MessageType.Player2].Sprite.Velocity.X) + offset;
+                                else PlayerList[i].Sprite.RotationZ = PlayerList[(byte)MessageType.Player2].desiredRotation + offset;
+                            } 
+                        }
                 switch (type)
                 {
-                    case (byte)MessageType.Player2:
-                        PlayerList[(byte)MessageType.Player2].goalVelocityX = incomingMessage.ReadFloat();
-                        PlayerList[(byte)MessageType.Player2].goalVelocityY = incomingMessage.ReadFloat();
-                        PlayerList[(byte)MessageType.Player2].desiredRotation = incomingMessage.ReadFloat(); 
-                        break;
-                    case (byte)MessageType.Spell:
-                        PlayerList[incomingMessage.ReadByte()].Castspell(incomingMessage.ReadInt16(), gameObjects, incomingMessage.ReadFloat(), ProjectileList);
                         
+                    case (byte)MessageType.Spell:
+                        byte tPlayerID = incomingMessage.ReadByte();
+                        Int16 tSpellselect = incomingMessage.ReadInt16();
+                        float tAngle = incomingMessage.ReadFloat();
+                        PlayerList[tPlayerID].Castspell(tSpellselect, gameObjects, tAngle);
+                        foreach (NetConnection Player in mAgent.Connections)
+                        {
+                            mAgent.WriteMessage((byte)MessageType.Spell);
+                            mAgent.WriteMessage(tPlayerID);
+                            mAgent.WriteMessage(tSpellselect);
+                            mAgent.WriteMessage(tAngle);
+                            mAgent.SendMessage(Player);
+                        }
                         ////If dashed was pressed
                         //if (incomingMessage.ReadBoolean())
                         //{
@@ -536,7 +596,6 @@ namespace TechnoViking
                         //    PlayerList[(byte)MessageType.Player2].Angle = incomingMessage.ReadFloat();
                         //    PlayerList[(byte)MessageType.Player2].Dash();
                         //}
-
                         break;
                     case (byte)MessageType.Action:
                         switch (incomingMessage.ReadByte())
@@ -552,31 +611,36 @@ namespace TechnoViking
 
 	        //PHYSICS AND OTHER LOGIC
             playermovement();
-            if (PlayerList[(byte)MessageType.Player2].desiredRotation == float.MinValue) //Försvinner när koden uppdaterats till att förutsäga clientside
-                PlayerList[(byte)MessageType.Player2].Sprite.RotationZ = (float)Math.Atan2(PlayerList[(byte)MessageType.Player2].Sprite.Velocity.Y, PlayerList[(byte)MessageType.Player2].Sprite.Velocity.X) + offset;
-            else PlayerList[(byte)MessageType.Player2].Sprite.RotationZ = PlayerList[(byte)MessageType.Player2].desiredRotation + offset;
-            CollisionActivity(gameObjects);
 
+            
+            CollisionActivity(gameObjects);
+            if (Aliveplayers.Count < 2 && mAgent.Connections.Count > 0)
+            {
+                StartNewRound(gameObjects);
+            }
             //Send the message to each player (client)
             foreach (NetConnection Player in mAgent.Connections)
             {
-                
-                //Send a separate message for each object
-                mAgent.WriteMessage((byte)MessageType.Player1);
-                mAgent.WriteMessage(PlayerList[(byte)MessageType.Player1].Sprite.X);
-                mAgent.WriteMessage(PlayerList[(byte)MessageType.Player1].Sprite.Y);
-                mAgent.WriteMessage(PlayerList[(byte)MessageType.Player1].Sprite.RotationZ);
-                //mAgent.WriteMessage(PlayerList[(byte)MessageType.Player1].CooldownCircleRadius);
-                //mAgent.WriteMessage(PlayerList[(byte)MessageType.Player1].DashPressed);
-                mAgent.SendMessage(Player);
+                for (byte i = 0; i < PlayerList.Count; i++)
+                {
+                    //Send a separate message for each object
+                    mAgent.WriteMessage(i);
+                    mAgent.WriteMessage(PlayerList[i].Sprite.X);
+                    mAgent.WriteMessage(PlayerList[i].Sprite.Y);
+                    mAgent.WriteMessage(PlayerList[i].Sprite.RotationZ);
+                    //mAgent.WriteMessage(PlayerList[(byte)MessageType.Player1].CooldownCircleRadius);
+                    //mAgent.WriteMessage(PlayerList[(byte)MessageType.Player1].DashPressed);
+                    mAgent.SendMessage(Player);
+                }
 
-                mAgent.WriteMessage((byte)MessageType.Player2);
-                mAgent.WriteMessage(PlayerList[(byte)MessageType.Player2].Sprite.X);
-                mAgent.WriteMessage(PlayerList[(byte)MessageType.Player2].Sprite.Y);
-                mAgent.WriteMessage(PlayerList[(byte)MessageType.Player2].Sprite.RotationZ);
-                //mAgent.WriteMessage(PlayerList[(byte)MessageType.Player2].CooldownCircleRadius);
-                //mAgent.WriteMessage(PlayerList[(byte)MessageType.Player2].DashPressed);
-                mAgent.SendMessage(Player);
+                //mAgent.WriteMessage((byte)MessageType.Player2);
+                //mAgent.WriteMessage(PlayerList[(byte)MessageType.Player2].Sprite.X);
+                //mAgent.WriteMessage(PlayerList[(byte)MessageType.Player2].Sprite.Y);
+                //mAgent.WriteMessage(PlayerList[(byte)MessageType.Player2].Sprite.RotationZ);
+                ////mAgent.WriteMessage(PlayerList[(byte)MessageType.Player2].CooldownCircleRadius);
+                ////mAgent.WriteMessage(PlayerList[(byte)MessageType.Player2].DashPressed);
+                //mAgent.SendMessage(Player);
+                
 
                 if (sendspell)
                 {

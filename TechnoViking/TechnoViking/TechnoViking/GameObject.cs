@@ -47,10 +47,33 @@ namespace TechnoViking
                     sprite.ScaleX = .5f * texturePixelWidth / pixelsPerUnit;
                     sprite.ScaleY = .5f * texturePixelHeight / pixelsPerUnit;
                 }
-            
+            if (this is Actor)
+            {
+                if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Client)
+                {
+                    RemoteRole = ENetRole.ROLE_Authority;
+                }
+                else if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server)
+                {
+                    Role = ENetRole.ROLE_Authority;
+                }
+            }
 
 
         }
+
+        // Net variables.
+        public enum ENetRole
+        {
+            ROLE_None,              // No role at all.
+            ROLE_SimulatedProxy,    // Locally simulated proxy of this actor.
+            ROLE_AutonomousProxy,   // Locally autonomous proxy of this actor.
+            ROLE_Authority,         // Authoritative control over the actor.
+        };
+        
+        ENetRole RemoteRole, Role;
+
+        
         
         public Sprite Sprite
         {
@@ -58,16 +81,21 @@ namespace TechnoViking
             set { sprite = value; }
         }
 
-        public bool CircleCollidesWith(GameObject gameobject) 
+        public bool CircleCollidesWith(GameObject gameobject)
+        {
+            return CircleCollidesWith(gameobject, gameobject.Sprite.Texture.Width, sprite.Texture.Width);
+        }
+
+        public bool CircleCollidesWith(GameObject gameobject, float r1, float r2) 
         {
             float pixelsPerUnit = SpriteManager.Camera.PixelsPerUnitAt(sprite.Z);
-            float distance;
+            float distancesquared;
             float distanceX = sprite.Position.X - gameobject.Sprite.Position.X;
             float distanceY = sprite.Position.Y - gameobject.Sprite.Position.Y;
-            distance = (float)Math.Sqrt(distanceX*distanceX + distanceY*distanceY);
-            
+            distancesquared = distanceX*distanceX + distanceY*distanceY;
 
-            if (sprite.Texture.Width / pixelsPerUnit / 2 + gameobject.Sprite.Texture.Width / pixelsPerUnit / 2 > distance)
+
+            if ((r1 / pixelsPerUnit / 2) * (r1 / pixelsPerUnit / 2) + (r2 / pixelsPerUnit / 2) * (r2 / pixelsPerUnit / 2) > distancesquared)
             {
             return true;
             }

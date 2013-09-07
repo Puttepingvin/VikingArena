@@ -39,18 +39,10 @@ namespace TechnoViking
         private bool rotated;
         Projectile tempprojectile;
         Beam tempbeam;
-        private bool malive = true;
         private int score;
         Vector3 startposition = new Vector3(0, 0, 0);
         
 
-        public bool Alive
-        {
-            get
-                {
-                return malive;
-            }
-        }
 
         public KeyboardState keystate
         {
@@ -104,19 +96,17 @@ namespace TechnoViking
         
 
 
-        public void Castspell(int spellindex, List<GameObject> gameObjects, float angle, List<Projectile> ProjectileList) 
+        public void Castspell(int spellindex, List<GameObject> gameObjects, float angle) 
         {
             switch ((int)spellindex)
             {
                 case 0:
                     tempprojectile = new Projectile(game, SpriteManager.AddSprite(Game1.Shadowbolttexture1), this, spellindex, gameObjects, angle);
                     gameObjects.Add(tempprojectile);
-                    ProjectileList.Add(tempprojectile);
                     break;
                 case 1:
                     tempprojectile = new Projectile(game, SpriteManager.AddSprite(Game1.Fireballtexture1), this, spellindex, gameObjects, angle);
                     gameObjects.Add(tempprojectile);
-                    ProjectileList.Add(tempprojectile);
                     break;
                 case 2:
                     tempbeam = new Beam(game, SpriteManager.AddSprite(Game1.Beamtexture1), this, gameObjects, angle);
@@ -132,16 +122,9 @@ namespace TechnoViking
         {
             gameObjects.Remove(this);
             SpriteManager.RemoveSprite(this.Sprite);
-            malive = false;
         }
 
-        public void Reload(List<GameObject> gameObjects) 
-        {
-            gameObjects.Add(this);
-            SpriteManager.AddSprite(this.Sprite);
-            malive = true;
-            sprite.Position = startposition;
-        }
+
 
         public bool Locked 
         {
