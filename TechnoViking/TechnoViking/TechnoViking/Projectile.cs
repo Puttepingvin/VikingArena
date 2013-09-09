@@ -28,7 +28,6 @@ namespace TechnoViking
         private const float projectilevelocity = 20.0f;
         private float offsetX = 0.0f;
         private float offsetY = 0.0f;
-        private Vector3 startingposition;
         private float life = .4f;
         Emittor firetail;
         int selectedSpell;

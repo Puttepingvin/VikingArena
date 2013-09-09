@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Windows;
 
 using FlatRedBall;
 using FlatRedBall.Graphics;
@@ -30,15 +31,13 @@ namespace TechnoViking
          Comment code
          Improve spellcasting
          Loock player during beam
-         Add 8 player capability (in progress)
          Update net code
-         * Actor class
          * abstract send in actor classes
          Update Menu
+         Display scores
          Save r^2
          
          */
-
 
 
 
@@ -53,6 +52,7 @@ namespace TechnoViking
         public const string MenuButtonTexture1 = "/Content/menubutton1.png";
         public const string MenuButtonTexture2 = "/Content/menubutton2.png";
         public const string MenuButtonTexture3 = "/Content/menubutton3.png";
+        public const string GameFont = "/Content/GameFont.xml";
         Gamestate gamestate;
         Sprite dummysprite = null;
         Menuscreen mainmenu;
@@ -88,10 +88,10 @@ namespace TechnoViking
 
             GlobalData.GlobalData.Initialize();
             
-
+            
             Content.RootDirectory = "Content";
-
-
+            GlobalData.GlobalData.keyboardDispatcher = new KeyboardDispatcher(this.Window);
+            //GlobalData.GlobalData.Font = Content.Load<SpriteFont>(GameFont);
 
 
 

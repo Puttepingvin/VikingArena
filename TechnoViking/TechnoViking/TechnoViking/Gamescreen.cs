@@ -47,7 +47,7 @@ namespace TechnoViking
         private List<int> scores = new List<int>();
         bool sendspell;
         float angle;
-        string ip = "81.230.67.177";
+        string mIP = "";
         //byte oldconnectionammount;
         byte Playercount;
         double roundstarted;
@@ -56,6 +56,14 @@ namespace TechnoViking
             : base(game, sprite) 
         {
             
+            StartServerAndClient();
+            //CreatePlayers(gameObjects);
+
+        }
+        public Gamescreen(Game game, Sprite sprite, List<GameObject> gameObjects, string ip)
+            : base(game, sprite)
+        {
+            mIP = ip;
             StartServerAndClient();
             //CreatePlayers(gameObjects);
 
@@ -400,7 +408,7 @@ namespace TechnoViking
             {
                 mAgent = new NetworkAgent(AgentRole.Client, "VikingArcade");
                 //mAgent.forwardport();
-                mAgent.Connect(ip);
+                mAgent.Connect(mIP);
 
                 System.Threading.Thread.Sleep(500);
                 

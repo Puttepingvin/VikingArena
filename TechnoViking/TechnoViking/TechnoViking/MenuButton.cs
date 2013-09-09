@@ -64,7 +64,7 @@ namespace TechnoViking
                         break;
                     case 2:
                         GlobalData.GlobalData.GameData.TypeOfGame = GlobalData.GameData.GameType.Client;
-                        screen.Creategamescreen(gameObjects);
+                        screen.CreateJoinScreen(gameObjects);
                         break;
                     case 3:
                         GlobalData.GlobalData.GameData.TypeOfGame = GlobalData.GameData.GameType.Local;

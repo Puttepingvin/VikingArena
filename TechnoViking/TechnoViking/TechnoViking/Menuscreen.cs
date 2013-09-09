@@ -52,16 +52,19 @@ namespace TechnoViking
             gameObjects.Add(PlayOffline);
 
         }
-
         public void Creategamescreen(List<GameObject> gameObjects)
         {
-            multiplayerarena1 = new Gamescreen(game, dummysprite, gameObjects);
+            Creategamescreen(gameObjects, "");
+        }
+        public void Creategamescreen(List<GameObject> gameObjects, string ip)
+        {
+            multiplayerarena1 = new Gamescreen(game, dummysprite, gameObjects, ip);
             gameObjects.Add(multiplayerarena1);
             this.Kill(gameObjects);
         }
         public void CreateJoinScreen(List<GameObject> gameObjects)
         {
-            JoinGameScreen joinScreen = new JoinGameScreen(game, dummysprite, gameObjects);
+            JoinGameScreen joinScreen = new JoinGameScreen(game, dummysprite, gameObjects, this);
             gameObjects.Add(joinScreen);
             this.Kill(gameObjects);
         }
