@@ -27,7 +27,6 @@ namespace TechnoViking
     class Menuscreen : GameObject
     {
         Gamescreen multiplayerarena1;
-        Sprite dummysprite = null;
         public Menuscreen(Game game, Sprite sprite, List<GameObject> gameObjects)
             : base(game, sprite) 
         {
@@ -56,18 +55,24 @@ namespace TechnoViking
         {
             Creategamescreen(gameObjects, "");
         }
+
         public void Creategamescreen(List<GameObject> gameObjects, string ip)
         {
-            multiplayerarena1 = new Gamescreen(game, dummysprite, gameObjects, ip);
+            multiplayerarena1 = new Gamescreen(game, null, gameObjects, ip);
             gameObjects.Add(multiplayerarena1);
             this.Kill(gameObjects);
+            if (multiplayerarena1.Stop)
+            {
+                Createmainmenu(gameObjects);
+            }
+                
         }
-        public void CreateJoinScreen(List<GameObject> gameObjects)
-        {
-            JoinGameScreen joinScreen = new JoinGameScreen(game, dummysprite, gameObjects, this);
-            gameObjects.Add(joinScreen);
-            this.Kill(gameObjects);
-        }
+            public void CreateJoinScreen(List<GameObject> gameObjects)
+            {
+                JoinGameScreen joinScreen = new JoinGameScreen(game, null, gameObjects, this);
+                gameObjects.Add(joinScreen);
+                this.Kill(gameObjects);
+            }
 
 
 
@@ -79,7 +84,6 @@ namespace TechnoViking
                 {
                     gameObjects.Remove(g);
                     SpriteManager.RemoveSprite(g.Sprite);
-
                 }
             }
             gameObjects.Remove(this);

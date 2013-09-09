@@ -44,6 +44,7 @@ namespace TechnoViking
             {
             GlobalData.GlobalData.GameData.TypeOfGame = GlobalData.GameData.GameType.Client;
             mmainmenu.Creategamescreen(gameObjects, ipbox.Text);
+                
             this.Kill(gameObjects);
             }
         }

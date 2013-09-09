@@ -51,20 +51,22 @@ namespace TechnoViking
         //byte oldconnectionammount;
         byte Playercount;
         double roundstarted;
+        
 
         public Gamescreen(Game game, Sprite sprite, List<GameObject> gameObjects)
             : base(game, sprite) 
         {
-            
-            StartServerAndClient();
+            Stop = false;
+            StartServerAndClient(gameObjects);
             //CreatePlayers(gameObjects);
 
         }
         public Gamescreen(Game game, Sprite sprite, List<GameObject> gameObjects, string ip)
             : base(game, sprite)
         {
+            Stop = false;
             mIP = ip;
-            StartServerAndClient();
+            StartServerAndClient(gameObjects);
             //CreatePlayers(gameObjects);
 
         }
@@ -397,7 +399,7 @@ namespace TechnoViking
             }
         }
 
-        private void StartServerAndClient()
+        private void StartServerAndClient(List<GameObject> gameObjects)
         {
             if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server)
             {
@@ -409,13 +411,27 @@ namespace TechnoViking
                 mAgent = new NetworkAgent(AgentRole.Client, "VikingArcade");
                 //mAgent.forwardport();
                 mAgent.Connect(mIP);
+                Stop = false;
+                double timeout = TimeManager.CurrentTime;
+                int i = 0;
+                while (mAgent.Connections.Count == 0 && !Stop) 
+                {
+                    if (i >= 30) 
+                    {
+                        Stop = true;
+                        
+                    }
+                    System.Threading.Thread.Sleep(100);
+                    i++;
+                }
 
-                System.Threading.Thread.Sleep(500);
-                
-                mAgent.WriteMessage((byte)MessageType.Action);
-                mAgent.WriteMessage((byte)ActionType.ServerRestart);
-                mAgent.SendMessage(mAgent.Connections[0], true);
-                
+
+                if (!Stop)
+                {
+                    mAgent.WriteMessage((byte)MessageType.Action);
+                    mAgent.WriteMessage((byte)ActionType.ServerRestart);
+                    mAgent.SendMessage(mAgent.Connections[0], true);
+                }
                 
             }
         }
@@ -670,6 +686,14 @@ namespace TechnoViking
         public override void Kill(List<GameObject> gameObjects) 
         {
             mAgent.Shutdown();
+            foreach (GameObject g in new List<GameObject>(gameObjects))
+            {
+                if (g != this)
+                {
+                    g.Kill(gameObjects);
+                }
+            }
+            gameObjects.Remove(this);
         }
         
         enum Spellbook : int
@@ -677,6 +701,13 @@ namespace TechnoViking
             shadowbolt,
             fireball,
             meadbeam,
+        }
+
+        public bool Stop
+        {
+            
+            get;
+            set;
         }
     }
 }

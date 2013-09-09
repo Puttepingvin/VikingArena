@@ -53,7 +53,6 @@ namespace TechnoViking
         public const string MenuButtonTexture2 = "/Content/menubutton2.png";
         public const string MenuButtonTexture3 = "/Content/menubutton3.png";
         public const string GameFont = "/Content/GameFont.xml";
-        Gamestate gamestate;
         Sprite dummysprite = null;
         Menuscreen mainmenu;
         Player player1;
@@ -138,33 +137,28 @@ namespace TechnoViking
 
 
 
-        
 
 
 
-        //public Player Player1
-        //{
-        //    get { return player1; }
-        //    set { player1 = value; }
-        //}
 
 
 
-        public Gamestate GameState
-        {
-            get { return gamestate; }
-            set { gamestate = value; }
-        }
-        
-            
 
-        }
-            
-        public enum Gamestate 
-        {
-            Menu,
-            Playing,
-        }
+    //    public Gamestate GameState
+    //    {
+    //        get { return gamestate; }
+    //        set { gamestate = value; }
+    //    }
+
+
+
+    }
+
+    //public enum Gamestate
+    //{
+    //    Menu,
+    //    Playing,
+    //}
 
 
     }
