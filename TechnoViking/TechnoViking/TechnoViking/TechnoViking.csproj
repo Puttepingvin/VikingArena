@@ -115,6 +115,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AbilityManager.cs" />
     <Compile Include="Beam.cs" />
     <Compile Include="Actor.cs" />
     <Compile Include="Emittor.cs" />

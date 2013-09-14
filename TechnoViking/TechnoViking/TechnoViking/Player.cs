@@ -26,8 +26,8 @@ namespace TechnoViking
 {
     class Player : Actor
     {
-        
 
+        float offset = (float)Math.PI / 2.0f;
         public float desiredRotation = 0;
         private Sprite sprite;
         private KeyboardState mkeystate;
@@ -35,14 +35,28 @@ namespace TechnoViking
         public float goalVelocityX = 0.0f;
         public float goalVelocityY = 0.0f;
         public int keycount = 0;
-        private bool locked;
+        private bool rotationlocked;
         private bool rotated;
-        Projectile tempprojectile;
-        Beam tempbeam;
         private int score;
+        double[] lastcasted = new double[3] { -100, -100, -100 };
         Vector3 startposition = new Vector3(0, 0, 0);
-        
+        float mrotationspeed = 2*(float)Math.PI;
 
+        public float Offset 
+        {
+            get { return offset; }
+        }
+
+        public float RotationSpeed 
+        {
+            get { return mrotationspeed; }
+        }
+
+        public double[] Lastcasted 
+        {
+            get { return lastcasted; }
+            set { lastcasted = value; }
+        }
 
         public KeyboardState keystate
         {
@@ -74,6 +88,11 @@ namespace TechnoViking
             set;
         }
 
+        public bool Locked
+        {
+            get;
+            set;
+        }
 
         public Player(Game game, Sprite sprite)
             : base(game, sprite)
@@ -96,24 +115,24 @@ namespace TechnoViking
         
 
 
-        public void Castspell(int spellindex, List<GameObject> gameObjects, float angle) 
-        {
-            switch ((int)spellindex)
-            {
-                case 0:
-                    tempprojectile = new Projectile(game, SpriteManager.AddSprite(Game1.Shadowbolttexture1), this, spellindex, gameObjects, angle);
-                    gameObjects.Add(tempprojectile);
-                    break;
-                case 1:
-                    tempprojectile = new Projectile(game, SpriteManager.AddSprite(Game1.Fireballtexture1), this, spellindex, gameObjects, angle);
-                    gameObjects.Add(tempprojectile);
-                    break;
-                case 2:
-                    tempbeam = new Beam(game, SpriteManager.AddSprite(Game1.Beamtexture1), this, gameObjects, angle);
-                    gameObjects.Add(tempbeam);
-                    break;
-            }
-        }
+        //public void Castspell(int spellindex, List<GameObject> gameObjects, float angle) 
+        //{
+        //    switch ((int)spellindex)
+        //    {
+        //        case 0:
+        //            tempprojectile = new Projectile(game, SpriteManager.AddSprite(Game1.Shadowbolttexture1), this, spellindex, gameObjects, angle);
+        //            gameObjects.Add(tempprojectile);
+        //            break;
+        //        case 1:
+        //            tempprojectile = new Projectile(game, SpriteManager.AddSprite(Game1.Fireballtexture1), this, spellindex, gameObjects, angle);
+        //            gameObjects.Add(tempprojectile);
+        //            break;
+        //        case 2:
+        //            tempbeam = new Beam(game, SpriteManager.AddSprite(Game1.Beamtexture1), this, gameObjects, angle);
+        //            gameObjects.Add(tempbeam);
+        //            break;
+        //    }
+        //}
 
 
 
@@ -126,17 +145,17 @@ namespace TechnoViking
 
 
 
-        public bool Locked 
+        public bool RotationLocked 
         {
-            get { return locked; }
-            set { locked = value; }
+            get { return rotationlocked; }
+            set { rotationlocked = value; }
         }
 
-        public bool Rotated
-        {
-            get { return rotated; }
-            set { rotated = value; }
-        }
+        //public bool Rotated
+        //{
+        //    get { return rotated; }
+        //    set { rotated = value; }
+        //}
 
         private void UnloadGame(List<GameObject> gameObjects)
         {

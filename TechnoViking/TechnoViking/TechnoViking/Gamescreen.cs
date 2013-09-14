@@ -33,7 +33,7 @@ namespace TechnoViking
     {
         NetworkAgent mAgent;
         Player tempplayer;
-        float offset = (float)Math.PI / 2.0f;
+
         const float speedLimit = 20.0f;
         const float accelerationspeed = 30.0f;
         const float breakacc = 20.0f;
@@ -46,19 +46,20 @@ namespace TechnoViking
         private Spellbook selectedSpell = Spellbook.shadowbolt;
         private List<int> scores = new List<int>();
         bool sendspell;
-        float angle;
         string mIP = "";
         //byte oldconnectionammount;
         byte Playercount;
         double roundstarted;
-        
+        AbilityManager abilitys;
+        float worldX;
+        float worldY;
 
         public Gamescreen(Game game, Sprite sprite, List<GameObject> gameObjects)
             : base(game, sprite) 
         {
             Stop = false;
             StartServerAndClient(gameObjects);
-            //CreatePlayers(gameObjects);
+            abilitys = new AbilityManager(game);
 
         }
         public Gamescreen(Game game, Sprite sprite, List<GameObject> gameObjects, string ip)
@@ -67,7 +68,7 @@ namespace TechnoViking
             Stop = false;
             mIP = ip;
             StartServerAndClient(gameObjects);
-            //CreatePlayers(gameObjects);
+            abilitys = new AbilityManager(game);
 
         }
 
@@ -107,8 +108,13 @@ namespace TechnoViking
             if (PlayerList.Count > PlayerID)
             {
                 PlayerMovement();
+                
+                if (!PlayerList[PlayerID].RotationLocked) 
+                {
+                    Rotation();
+                }
                 Spellcasting(gameObjects);
-                Rotation();
+                abilitys.Update(gameObjects, PlayerList);
             }
             ServerAndClientActivity(gameObjects);
 
@@ -279,40 +285,30 @@ namespace TechnoViking
 
         private void Rotation()
         {
-            //Riktning att kolla åt
-            if (PlayerList[PlayerID].mousestate.LeftButton == ButtonState.Pressed)
-            {
-                float worldX = GuiManager.Cursor.WorldXAt(PlayerList[PlayerID].Sprite.Z);
-                float worldY = GuiManager.Cursor.WorldYAt(PlayerList[PlayerID].Sprite.Z);
+            
+            //if (PlayerList[PlayerID].mousestate.LeftButton == ButtonState.Pressed)
+            //{
+            //    worldX = GuiManager.Cursor.WorldXAt(PlayerList[PlayerID].Sprite.Z);
+            //    worldY = GuiManager.Cursor.WorldYAt(PlayerList[PlayerID].Sprite.Z);
 
-                PlayerList[PlayerID].desiredRotation = (float)Math.Atan2(
-                worldY - PlayerList[PlayerID].Sprite.Y, worldX - PlayerList[PlayerID].Sprite.X);
-
-                // Sätt rotationen
-
-
-            }
-
-
-            else if (PlayerList[PlayerID].goalVelocityX != 0 || PlayerList[PlayerID].goalVelocityY != 0)
-            {
-                if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server)
+            //    PlayerList[PlayerID].desiredRotation = (float)Math.Atan2(
+            //    worldY - PlayerList[PlayerID].Sprite.Y, worldX - PlayerList[PlayerID].Sprite.X);
+            //    // Sätt rotationen
+            //}
+            
+                if (PlayerList[PlayerID].goalVelocityX != 0 || PlayerList[PlayerID].goalVelocityY != 0)
                 {
-                    PlayerList[PlayerID].desiredRotation = (float)Math.Atan2(PlayerList[PlayerID].Sprite.Velocity.Y, PlayerList[PlayerID].Sprite.Velocity.X);
+                    if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server)
+                    {
+                        PlayerList[PlayerID].desiredRotation = (float)Math.Atan2(PlayerList[PlayerID].Sprite.Velocity.Y, PlayerList[PlayerID].Sprite.Velocity.X) + PlayerList[PlayerID].Offset;
+                    }
+                    else
+                        PlayerList[PlayerID].desiredRotation = float.MinValue;
+
                 }
-                else 
-                    PlayerList[PlayerID].desiredRotation = float.MinValue;
-                
             }
-            if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server)
-            {
-                PlayerList[PlayerID].Sprite.RotationZ = PlayerList[PlayerID].desiredRotation + offset;
-            }
-
-
-
-
-        }
+            
+        
 
         private void Spellcasting(List<GameObject> gameObjects)
         {
@@ -344,14 +340,11 @@ namespace TechnoViking
 
             if (PlayerList[PlayerID].mousestate.LeftButton == ButtonState.Pressed && mouseup == true)
             {
-                float worldX = GuiManager.Cursor.WorldXAt(PlayerList[PlayerID].Sprite.Z);
-                float worldY = GuiManager.Cursor.WorldYAt(PlayerList[PlayerID].Sprite.Z);
-                angle = (float)Math.Atan2(
-                worldY - PlayerList[PlayerID].Sprite.Y, worldX - PlayerList[PlayerID].Sprite.X);
+                worldX = GuiManager.Cursor.WorldXAt(PlayerList[PlayerID].Sprite.Z);
+                worldY = GuiManager.Cursor.WorldYAt(PlayerList[PlayerID].Sprite.Z);
+                
                 mouseup = false;
-               
-                    
-                    PlayerList[PlayerID].Castspell((int)selectedSpell, gameObjects, angle);
+                abilitys.CastAbility((int)selectedSpell, gameObjects, worldX, worldY, PlayerList[PlayerID]);
                     sendspell = true;
                 
                     
@@ -364,6 +357,35 @@ namespace TechnoViking
                 sendspell = false;
             }
             else sendspell = false;
+        }
+
+        private void Serverrotation() 
+        {
+            
+
+            foreach (Player p in PlayerList) 
+            {
+
+                if (p.desiredRotation < 0)
+                {
+                    p.desiredRotation += (2 * (float)Math.PI);
+                }
+
+                if (p.desiredRotation - p.Sprite.RotationZ < p.RotationSpeed * TimeManager.SecondDifference && p.desiredRotation - p.Sprite.RotationZ > -p.RotationSpeed * TimeManager.SecondDifference)
+                {
+                    p.Sprite.RotationZ = p.desiredRotation;
+                }
+                else if (p.desiredRotation - p.Sprite.RotationZ < -Math.PI || (p.desiredRotation - p.Sprite.RotationZ >= 0 && p.desiredRotation - p.Sprite.RotationZ <= Math.PI)) 
+                {
+                    p.Sprite.RotationZ += p.RotationSpeed * TimeManager.SecondDifference;
+                }
+                else
+                {
+                    p.Sprite.RotationZ -= p.RotationSpeed * TimeManager.SecondDifference;
+                }
+                
+            }
+
         }
 
         private void CollisionActivity(List<GameObject> gameObjects)
@@ -475,7 +497,8 @@ namespace TechnoViking
                         mAgent.WriteMessage((byte)MessageType.Spell);
                         mAgent.WriteMessage(PlayerID);
                         mAgent.WriteMessage((Int16)selectedSpell);
-                        mAgent.WriteMessage(angle);
+                        mAgent.WriteMessage(worldX);
+                        mAgent.WriteMessage(worldY);
                         mAgent.SendMessage(mAgent.Connections[0]);
                     }
 
@@ -522,7 +545,7 @@ namespace TechnoViking
                         byte tPlayerID = incomingMessage.ReadByte();
                         if (tPlayerID != PlayerID)
                         {
-                            PlayerList[tPlayerID].Castspell(incomingMessage.ReadInt16(), gameObjects, incomingMessage.ReadFloat());
+                            abilitys.CastAbility(incomingMessage.ReadInt16(), gameObjects, incomingMessage.ReadFloat(), incomingMessage.ReadFloat(), PlayerList[tPlayerID]);
                         }
                     break;
 
@@ -589,13 +612,16 @@ namespace TechnoViking
                         {
                             if (type == i)
                             {
+                                float tRotation;
                                 PlayerList[i].goalVelocityX = incomingMessage.ReadFloat();
                                 PlayerList[i].goalVelocityY = incomingMessage.ReadFloat();
-                                PlayerList[i].desiredRotation = incomingMessage.ReadFloat();
-                                if (PlayerList[i].desiredRotation == float.MinValue) //Försvinner när koden uppdaterats till att förutsäga clientside
-                                    PlayerList[i].Sprite.RotationZ = (float)Math.Atan2(PlayerList[(byte)MessageType.Player2].Sprite.Velocity.Y, PlayerList[(byte)MessageType.Player2].Sprite.Velocity.X) + offset;
-                                else PlayerList[i].Sprite.RotationZ = PlayerList[(byte)MessageType.Player2].desiredRotation + offset;
-                            } 
+
+                                tRotation = incomingMessage.ReadFloat();
+                                if (tRotation == float.MinValue && PlayerList[i].Sprite.Velocity != Vector3.Zero)
+                                { //Försvinner när koden uppdaterats till att förutsäga clientside
+                                    PlayerList[i].desiredRotation = (float)Math.Atan2(PlayerList[i].Sprite.Velocity.Y, PlayerList[i].Sprite.Velocity.X) +  PlayerList[i].Offset;
+                                }
+                            }
                         }
                 switch (type)
                 {
@@ -603,14 +629,16 @@ namespace TechnoViking
                     case (byte)MessageType.Spell:
                         byte tPlayerID = incomingMessage.ReadByte();
                         Int16 tSpellselect = incomingMessage.ReadInt16();
-                        float tAngle = incomingMessage.ReadFloat();
-                        PlayerList[tPlayerID].Castspell(tSpellselect, gameObjects, tAngle);
+                        float tWorldX = incomingMessage.ReadFloat();
+                        float tWorldY = incomingMessage.ReadFloat();
+                        abilitys.CastAbility(tSpellselect, gameObjects, tWorldX, tWorldY, PlayerList[tPlayerID]);
                         foreach (NetConnection Player in mAgent.Connections)
                         {
                             mAgent.WriteMessage((byte)MessageType.Spell);
                             mAgent.WriteMessage(tPlayerID);
                             mAgent.WriteMessage(tSpellselect);
-                            mAgent.WriteMessage(tAngle);
+                            mAgent.WriteMessage(tWorldX);
+                            mAgent.WriteMessage(tWorldY);
                             mAgent.SendMessage(Player);
                         }
                         ////If dashed was pressed
@@ -635,7 +663,7 @@ namespace TechnoViking
 
 	        //PHYSICS AND OTHER LOGIC
             playermovement();
-
+            Serverrotation();
             
             CollisionActivity(gameObjects);
             if (Aliveplayers.Count < 2 && mAgent.Connections.Count > 0)
@@ -671,7 +699,8 @@ namespace TechnoViking
                     mAgent.WriteMessage((byte)MessageType.Spell);
                     mAgent.WriteMessage(PlayerID);
                     mAgent.WriteMessage((Int16)selectedSpell);
-                    mAgent.WriteMessage(angle);
+                    mAgent.WriteMessage(worldX);
+                    mAgent.WriteMessage(worldY);
                     mAgent.SendMessage(Player);
                 }
 

@@ -32,6 +32,19 @@ namespace TechnoViking
         Emittor firetail;
         int selectedSpell;
         private byte mplayerID;
+        Player player;
+        float CursorX;
+        float CursorY;
+        float angle;
+        int mspellindex;
+
+        public int Spellindex 
+        {
+            get 
+            {
+                return mspellindex;
+            }
+        }
 
         public byte playerID 
         {
@@ -42,52 +55,45 @@ namespace TechnoViking
         }
 
 
-        public Projectile(Game game, Sprite sprite, Player player, int selectedSpell, List<GameObject> gameObjects, float angle)
+        public Projectile(Game game, Sprite sprite, Player player, int selectedSpell, List<GameObject> gameObjects, float CursorX, float CursorY)
             : base(game, sprite)
-
         {
-            
+            mspellindex = selectedSpell;
             this.sprite = sprite;
-            
+            this.CursorX = CursorX;
+            this.CursorY = CursorY;
             sprite.ScaleX = 0.3f;
             sprite.ScaleY = 0.3f;
-
-            sprite.Position = player.Sprite.Position;
-
             mplayerID = (byte)player.Playerindex;
+            this.player = player;
 
+            this.selectedSpell = selectedSpell;
+
+        }
+
+
+        public void SetPosition(List<GameObject> gameObjects)
+        {
+            angle = (float)Math.Atan2(
+                CursorY - player.Sprite.Y, CursorX - player.Sprite.X);
+            sprite.Position = player.Sprite.Position;
             sprite.Velocity.X = (float)Math.Cos(angle) * projectilevelocity;
             sprite.Velocity.Y = (float)Math.Sin(angle) * projectilevelocity;
             sprite.RotationZ = angle;
-            
-            
             float texturePixelWidth = sprite.Texture.Width;
             float texturePixelHeight = sprite.Texture.Height;
-
-            //Now, we need to find out how many pixels per unit there are in our view at the Sprite's Z position:
             float pixelsPerUnit = SpriteManager.Camera.PixelsPerUnitAt(sprite.Z);
-
-            //Now, we just have to use those two values to set the scale.
-            //sprite.ScaleX = .5f * texturePixelWidth / pixelsPerUnit;
-            //sprite.ScaleY = .5f * texturePixelHeight / pixelsPerUnit;
-
             offsetX = ((texturePixelWidth + player.Sprite.Texture.Width) / pixelsPerUnit) / 2 * (float)Math.Cos(angle);
             offsetY = ((texturePixelHeight + player.Sprite.Texture.Width) / pixelsPerUnit) / 2 * (float)Math.Sin(angle);
             sprite.Position.X = player.Sprite.Position.X + offsetX;
             sprite.Position.Y = player.Sprite.Position.Y + offsetY;
-            this.selectedSpell = selectedSpell;
             if (selectedSpell == 1)
             {
                 firetail = new Emittor(game, SpriteManager.AddSprite(Game1.Pixeltexture), .15f, Color.Tomato, Color.Yellow, Color.Orange,
                     0.05f, float.MaxValue, this, 1, (angle + (float)Math.PI / 2), ((angle + (float)Math.PI * 3 / 2)), 0, false);
                 gameObjects.Add(firetail);
             }
-
-
         }
-
-
-
 
 
         /* 
