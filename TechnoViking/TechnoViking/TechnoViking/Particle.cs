@@ -43,7 +43,6 @@ namespace TechnoViking
             if (TimeManager.CurrentTime >= sprite.TimeCreated + life)
             {
                 this.Kill(gameObjects);
-                
             }
            
             

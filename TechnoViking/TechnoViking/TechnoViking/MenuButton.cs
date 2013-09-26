@@ -26,16 +26,14 @@ namespace TechnoViking
     {
         
         Sprite sprite;
-        float buttonindex;
         Player player1;
-        MouseState mousestate;
         Menuscreen screen;
 
         public MenuButton(Game game, Sprite sprite, float buttonindex, Menuscreen screen)
             : base(game, sprite) 
         {
             this.sprite = sprite;
-            this.buttonindex = buttonindex;
+            this.Buttonindex = buttonindex;
             this.screen = screen;
             float texturePixelWidth = sprite.Texture.Width;
             float texturePixelHeight = sprite.Texture.Height;
@@ -50,38 +48,36 @@ namespace TechnoViking
 
         public override void Update(List<GameObject> gameObjects)
         {
-            mousestate  = Mouse.GetState();
+        }
+
+        public bool MouseOver() 
+        {
             float pixelsPerUnit = SpriteManager.Camera.PixelsPerUnitAt(sprite.Z);
             if ((GuiManager.Cursor.WorldXAt(sprite.Z) < sprite.Position.X + sprite.Texture.Width / pixelsPerUnit / 2 && GuiManager.Cursor.WorldXAt(sprite.Z) > sprite.Position.X - sprite.Texture.Width / pixelsPerUnit / 2)
-                && (GuiManager.Cursor.WorldYAt(sprite.Z) < sprite.Position.Y + sprite.Texture.Height / pixelsPerUnit / 2) && (GuiManager.Cursor.WorldYAt(sprite.Z) > sprite.Position.Y - sprite.Texture.Height / pixelsPerUnit / 2)
-                && (mousestate.LeftButton == ButtonState.Pressed) ) 
+                && (GuiManager.Cursor.WorldYAt(sprite.Z) < sprite.Position.Y + sprite.Texture.Height / pixelsPerUnit / 2) && (GuiManager.Cursor.WorldYAt(sprite.Z) > sprite.Position.Y - sprite.Texture.Height / pixelsPerUnit / 2))
             {
-                switch ((int)buttonindex) 
-                {
-                    case 1:
-                        GlobalData.GlobalData.GameData.TypeOfGame = GlobalData.GameData.GameType.Server;
-                        screen.Creategamescreen(gameObjects);
-                        break;
-                    case 2:
-                        GlobalData.GlobalData.GameData.TypeOfGame = GlobalData.GameData.GameType.Client;
-                        screen.CreateJoinScreen(gameObjects);
-                        break;
-                    case 3:
-                        GlobalData.GlobalData.GameData.TypeOfGame = GlobalData.GameData.GameType.Local;
-                        screen.Creategamescreen(gameObjects);
-                        break;
 
-
-                }
+                return true;
             }
+            else return false;
         }
-        private void LoadGame(List<GameObject> gameObjects)
+
+        
+
+        private void LoadGame(List<GameObject> gameObjects) //move to menuscreen
         {
             player1 = new Player(game, SpriteManager.AddSprite(Game1.PlayerTexture1));
             gameObjects.Add(player1);
             player1.Sprite.ScaleX = 1.3f;
             player1.Sprite.ScaleY = 1.3f;
         }
+
+        public float Buttonindex
+        {
+            get;
+            set;
+        }
+
         public override void Kill(List<GameObject> gameObjects)
         {
             

@@ -36,13 +36,21 @@ namespace TechnoViking
          Update Menu
          Display scores
          Save r^2
-         
+         connectionscreen
+         rotation is cosmetic, shouldn't ever be sent over network
+         only input should be sent over network outside of ticks, this takes more of a toll on the computer and less on the network, wich should be ok since our game shouldn't be that demanding from a cpu stantpoint anyway
          */
 
 
 
-        GraphicsDeviceManager graphics;
-        List<GameObject> gameObjects;
+        GraphicsDeviceManager graphics; //Needed to draw things to screen
+
+        List<GameObject> gameObjects; //Saves all the things you see in the game
+
+
+        /// <summary>
+        /// Saves all the references to external content
+        /// </summary>
         public const string PlayerTexture1 = "/Content/viking1.png";
         public const string Shadowbolttexture1 = "/Content/viking1.png";
         public const string Fireballtexture1 = "/Content/fireball.png";
@@ -53,84 +61,65 @@ namespace TechnoViking
         public const string MenuButtonTexture2 = "/Content/menubutton2.png";
         public const string MenuButtonTexture3 = "/Content/menubutton3.png";
         public const string GameFont = "/Content/GameFont.xml";
-        Sprite dummysprite = null;
-        Menuscreen mainmenu;
-        Player player1;
 
 
-        public Game1()
+        Menuscreen mainmenu; //The menu class
+
+        public Game1() //Runs when the game starts, before the initalize method
         {
-            graphics = new GraphicsDeviceManager(this);
-            gameObjects = new List<GameObject>();
-            Content.RootDirectory = "Content";
-			
-/*#if WINDOWS_PHONE || ANDROID || IOS
-
-			// Frame rate is 30 fps by default for Windows Phone.
-            TargetElapsedTime = TimeSpan.FromTicks(333333);
-            graphics.IsFullScreen = true;
-#else*/
-            graphics.PreferredBackBufferHeight = 720;
-            graphics.PreferredBackBufferWidth = 1080;
-//#endif
+            graphics = new GraphicsDeviceManager(this); //Needed to draw things to screen
+            gameObjects = new List<GameObject>(); //initilizes the list
+            Content.RootDirectory = "Content"; //Specifies what folder the external content is located in
+            graphics.PreferredBackBufferHeight = 720; //sets the height of the window
+            graphics.PreferredBackBufferWidth = 1080;//sets the width of the window
         }
-        public const float pi = (float)Math.PI;
 
-        protected override void Initialize()
+        protected override void Initialize() //Runs when the game starts, after the constructor
         {
+
+            //Flatredball stuff
             Renderer.UseRenderTargets = false;
             FlatRedBallServices.InitializeFlatRedBall(this, graphics);
             FlatRedBallServices.Game.IsMouseVisible = true;
 
-
-            mainmenu = new Menuscreen(this, dummysprite, gameObjects);
-
+            //Creates the menuclass
+            mainmenu = new Menuscreen(this, null, gameObjects);
+            gameObjects.Add(mainmenu);
+            //Creates the global data
             GlobalData.GlobalData.Initialize();
             
             
-            Content.RootDirectory = "Content";
-            GlobalData.GlobalData.keyboardDispatcher = new KeyboardDispatcher(this.Window);
+            //Content.RootDirectory = "Content"; 
+
+            GlobalData.GlobalData.keyboardDispatcher = new KeyboardDispatcher(this.Window); //Initializes the 
+            
             //GlobalData.GlobalData.Font = Content.Load<SpriteFont>(GameFont);
-
-
-
-
                 
             //ScreenManager.Start(typeof(SomeScreen).FullName);
                
             base.Initialize();
         }
 
-
-        
-        private void LoadGame() 
-        {
-            player1 = new Player(this, SpriteManager.AddSprite(PlayerTexture1));
-            gameObjects.Add(player1);
-            player1.Sprite.ScaleX = 1.3f;
-            player1.Sprite.ScaleY = 1.3f;
-        }
-
         
 
-        protected override void Update(GameTime gameTime)
+        protected override void Update(GameTime gameTime) //Runs once every frame
         {
-            FlatRedBallServices.Update(gameTime);
+            FlatRedBallServices.Update(gameTime); //does flatredball stuff
 
 
-            foreach (GameObject g in new List<GameObject>(gameObjects)) 
+            foreach (GameObject g in new List<GameObject>(gameObjects)) //Runs the update method in all 
             {
                 g.Update(gameObjects);
             }
 
-            FlatRedBall.Screens.ScreenManager.Activity();
+            FlatRedBall.Screens.ScreenManager.Activity(); //Again, flatredball stuff
 
             base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
-            FlatRedBallServices.Draw();
+            FlatRedBallServices.Draw(); //Draws everything in the spritemanager
 
             base.Draw(gameTime);
         }
@@ -144,24 +133,36 @@ namespace TechnoViking
 
 
 
+
+
+
+
+    }
+
+
+    /* Might be relevant at a later stage    
+    #if WINDOWS_PHONE || ANDROID || IOS
+
+    // Frame rate is 30 fps by default for Windows Phone.
+    TargetElapsedTime = TimeSpan.FromTicks(333333);
+    graphics.IsFullScreen = true;
+    #else
+     
+    //public enum Gamestate
+    //{
+    //    Menu,
+    //    Playing,
+    //} 
+    
     //    public Gamestate GameState
     //    {
     //        get { return gamestate; }
     //        set { gamestate = value; }
     //    }
+     
+    */
 
-
-
-    }
-
-    //public enum Gamestate
-    //{
-    //    Menu,
-    //    Playing,
-    //}
-
-
-    }
+}
 
     
 

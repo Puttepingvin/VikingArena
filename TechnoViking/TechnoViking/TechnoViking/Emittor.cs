@@ -170,12 +170,12 @@ namespace TechnoViking
 
             }
 
-            float angle = (float)rng.Next((int)anglemin, (int)anglemax) * (int)Game1.pi / 180;
+            float angle = (float)rng.Next((int)anglemin, (int)anglemax) * (float)Math.PI / 180;
             if (twoside)
             {
                 if (particlecreatedcount % 2 == 0)
                 {
-                    angle += Game1.pi;
+                    angle += (float)Math.PI;
                 }
             }
             particlesprite.Velocity.X = (float)Math.Cos(angle) * particlespeed;

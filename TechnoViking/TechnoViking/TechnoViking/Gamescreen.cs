@@ -10,7 +10,6 @@ using TechnoViking.GlobalData;
 
 
 using Microsoft.Xna.Framework;
-#if !FRB_MDX
 using System.Linq;
 
 using Microsoft.Xna.Framework.Audio;
@@ -21,19 +20,22 @@ using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 using FlatRedBall.Gui;
 using FlatRedBall.Math.Geometry;
-#endif
 using FlatRedBall.Screens;
 namespace TechnoViking
 {
     /// <summary>
     /// BUGS:
-    /// everything doesn't respawn clientside
+    /// Movemeny rotation is broken for clients
+    /// 
+    /// REWRITE:
+    /// Rotation
+    /// Server code
+    /// 
     /// </summary>
     class Gamescreen : GameObject
     {
         NetworkAgent mAgent;
         Player tempplayer;
-
         const float speedLimit = 20.0f;
         const float accelerationspeed = 30.0f;
         const float breakacc = 20.0f;
@@ -53,6 +55,8 @@ namespace TechnoViking
         AbilityManager abilitys;
         float worldX;
         float worldY;
+        bool pause;
+        
 
         public Gamescreen(Game game, Sprite sprite, List<GameObject> gameObjects)
             : base(game, sprite) 
@@ -72,6 +76,10 @@ namespace TechnoViking
 
         }
 
+        /// <summary>
+        /// Creates all the player classes and adds them to the proper lists
+        /// </summary>
+        /// <param name="gameObjects"></param>
         private void CreatePlayers(List<GameObject> gameObjects)
         {
             for (byte i = 0; i < Playercount; i++)
@@ -95,6 +103,9 @@ namespace TechnoViking
             AssignPlayerIndices();
         }
 
+        /// <summary>
+        /// Gives all players a unique number
+        /// </summary>
         private void AssignPlayerIndices()
         {
             for (int i = 0; i < PlayerList.Count; i++)
@@ -103,12 +114,15 @@ namespace TechnoViking
             }
         }
 
+        /// <summary>
+        /// Updates the game screen
+        /// </summary>
+        /// <param name="gameObjects"></param>
         public override void Update(List<GameObject> gameObjects)
         {
-            if (PlayerList.Count > PlayerID)
+            if (PlayerList.Count > 0) //if there are any players in the game
             {
-                PlayerMovement();
-                
+                InputCheck();
                 if (!PlayerList[PlayerID].RotationLocked) 
                 {
                     Rotation();
@@ -123,6 +137,10 @@ namespace TechnoViking
 
         }
 
+        /// <summary>
+        /// Resets all variables
+        /// </summary>
+        /// <param name="gameObjects"></param>
         private void StartNewRound(List<GameObject> gameObjects)
         {
             foreach (Player p in PlayerList)
@@ -154,102 +172,79 @@ namespace TechnoViking
             
         }
 
-        private void PlayerMovement()
+        /// <summary>
+        /// Checks key input and decides the desired velocity
+        /// </summary>
+        private void InputCheck()
         {
             //Skapar ett värde mellan 0-15 beroende på vilka knappar som är intryckta
+            PlayerList[PlayerID].oldkeycount = PlayerList[PlayerID].keycount;
             PlayerList[PlayerID].keycount = 0;
             if (PlayerList[PlayerID].keystate.IsKeyDown(Keys.W)) PlayerList[PlayerID].keycount += 1;
             if (PlayerList[PlayerID].keystate.IsKeyDown(Keys.S)) PlayerList[PlayerID].keycount += 2;
             if (PlayerList[PlayerID].keystate.IsKeyDown(Keys.A)) PlayerList[PlayerID].keycount += 4;
             if (PlayerList[PlayerID].keystate.IsKeyDown(Keys.D)) PlayerList[PlayerID].keycount += 8;
 
-            switch (PlayerList[PlayerID].keycount)
-            {
-                case 0:
-                    PlayerList[PlayerID].goalVelocityX = 0;
-                    PlayerList[PlayerID].goalVelocityY = 0;
-                    break;
-
-                case 1:
-                    PlayerList[PlayerID].goalVelocityY = speedLimit;
-                    PlayerList[PlayerID].goalVelocityX = 0;
-                    break;
-
-                case 2:
-                    PlayerList[PlayerID].goalVelocityY = -speedLimit;
-                    PlayerList[PlayerID].goalVelocityX = 0;
-                    break;
-
-                case 4:
-                    PlayerList[PlayerID].goalVelocityX = -speedLimit;
-                    PlayerList[PlayerID].goalVelocityY = 0;
-                    break;
-
-                case 8:
-                    PlayerList[PlayerID].goalVelocityX = speedLimit;
-                    PlayerList[PlayerID].goalVelocityY = 0;
-                    break;
-                case 5:
-
-                    PlayerList[PlayerID].goalVelocityY = speedLimit * 0.7f;
-
-                    PlayerList[PlayerID].goalVelocityX = -speedLimit * 0.7f;
-
-                    break;
-                case 6:
-                    PlayerList[PlayerID].goalVelocityY = -speedLimit * 0.7f;
-                    PlayerList[PlayerID].goalVelocityX = -speedLimit * 0.7f;
-                    break;
-                case 9:
-                    PlayerList[PlayerID].goalVelocityY = speedLimit * 0.7f;
-                    PlayerList[PlayerID].goalVelocityX = speedLimit * 0.7f;
-                    break;
-                case 10:
-                    PlayerList[PlayerID].goalVelocityY = -speedLimit * 0.7f;
-                    PlayerList[PlayerID].goalVelocityX = speedLimit * 0.7f;
-                    break;
-            }
+            //Skicka redan här, sen, eventuellt
         }
 
-        private void playermovement()
+        /// <summary>
+        /// Decides the acceleration of all players, only called serverside.
+        /// </summary>
+        private void playermovement(Player p)
         {
-            //if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Client)
-            //{
-            //    //X
-            //    if (PlayerList[PlayerID].goalVelocityX > PlayerList[PlayerID].Sprite.Velocity.X + 0.1f)
-            //    {
-            //        PlayerList[PlayerID].CurrentXAcceleration = accelerationspeed;
-            //    }
 
-            //    else if (PlayerList[PlayerID].goalVelocityX < PlayerList[PlayerID].Sprite.Velocity.X - 0.1f)
-            //    {
-            //        PlayerList[PlayerID].CurrentXAcceleration = -accelerationspeed;
-            //    }
-            //    else
-            //    {
-            //        PlayerList[PlayerID].CurrentXAcceleration = 0;
-            //    }
-
-            //    //Y 
-            //    if (PlayerList[PlayerID].goalVelocityY > PlayerList[PlayerID].Sprite.Velocity.Y + 0.1f)
-            //    {
-            //        PlayerList[PlayerID].CurrentYAcceleration = accelerationspeed;
-            //    }
-
-            //    else if (PlayerList[PlayerID].goalVelocityY < PlayerList[PlayerID].Sprite.Velocity.Y - 0.1f)
-            //    {
-            //        PlayerList[PlayerID].CurrentYAcceleration = -accelerationspeed;
-            //    }
-            //    else
-            //    {
-            //        PlayerList[PlayerID].CurrentYAcceleration = 0;
-            //    }
-            //}
-
-
+            
             //X
-            foreach (Player p in PlayerList)
-            {
+
+
+                switch (p.keycount)
+                {
+                    case 0:
+                        p.goalVelocityX = 0;
+                        p.goalVelocityY = 0;
+                        break;
+
+                    case 1:
+                        p.goalVelocityY = speedLimit;
+                        p.goalVelocityX = 0;
+                        break;
+
+                    case 2:
+                        p.goalVelocityY = -speedLimit;
+                        p.goalVelocityX = 0;
+                        break;
+
+                    case 4:
+                        p.goalVelocityX = -speedLimit;
+                        p.goalVelocityY = 0;
+                        break;
+
+                    case 8:
+                        p.goalVelocityX = speedLimit;
+                        p.goalVelocityY = 0;
+                        break;
+                    case 5:
+
+                        p.goalVelocityY = speedLimit * 0.7f;
+
+                        p.goalVelocityX = -speedLimit * 0.7f;
+
+                        break;
+                    case 6:
+                        p.goalVelocityY = -speedLimit * 0.7f;
+                        p.goalVelocityX = -speedLimit * 0.7f;
+                        break;
+                    case 9:
+                        p.goalVelocityY = speedLimit * 0.7f;
+                        p.goalVelocityX = speedLimit * 0.7f;
+                        break;
+                    case 10:
+                        p.goalVelocityY = -speedLimit * 0.7f;
+                        p.goalVelocityX = speedLimit * 0.7f;
+                        break;
+                }
+
                 if (p.goalVelocityX > p.Sprite.Velocity.X + 0.1f)
                 {
                     p.Sprite.Acceleration.X = accelerationspeed;
@@ -280,9 +275,12 @@ namespace TechnoViking
                 {
                     p.Sprite.Acceleration.Y = 0;
                 }
-            }
+            
         }
 
+        /// <summary>
+        /// Decides the desired rotationm should be rewritten
+        /// </summary>
         private void Rotation()
         {
             
@@ -295,21 +293,17 @@ namespace TechnoViking
             //    worldY - PlayerList[PlayerID].Sprite.Y, worldX - PlayerList[PlayerID].Sprite.X);
             //    // Sätt rotationen
             //}
-            
-                if (PlayerList[PlayerID].goalVelocityX != 0 || PlayerList[PlayerID].goalVelocityY != 0)
-                {
-                    if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server)
-                    {
-                        PlayerList[PlayerID].desiredRotation = (float)Math.Atan2(PlayerList[PlayerID].Sprite.Velocity.Y, PlayerList[PlayerID].Sprite.Velocity.X) + PlayerList[PlayerID].Offset;
-                    }
-                    else
-                        PlayerList[PlayerID].desiredRotation = float.MinValue;
 
+            if (PlayerList[PlayerID].Sprite.Velocity.X != 0 || PlayerList[PlayerID].Sprite.Velocity.Y != 0)
+                {
+                   PlayerList[PlayerID].desiredRotation = (float)Math.Atan2(PlayerList[PlayerID].Sprite.Velocity.Y, PlayerList[PlayerID].Sprite.Velocity.X) + PlayerList[PlayerID].Offset;
                 }
             }
-            
-        
 
+        /// <summary>
+        /// Handles everything related to spellcasting
+        /// </summary>
+        /// <param name="gameObjects"></param>
         private void Spellcasting(List<GameObject> gameObjects)
         {
 
@@ -359,13 +353,20 @@ namespace TechnoViking
             else sendspell = false;
         }
 
+        /// <summary>
+        /// Sets the rotation of all sprites, only called serverside
+        /// </summary>
         private void Serverrotation() 
         {
             
 
             foreach (Player p in PlayerList) 
             {
-
+                if (p.Sprite.Velocity.X != 0 || p.Sprite.Velocity.Y != 0)
+                {
+                   p.desiredRotation = (float)Math.Atan2(p.Sprite.Velocity.Y, p.Sprite.Velocity.X) + p.Offset;
+                }
+            
                 if (p.desiredRotation < 0)
                 {
                     p.desiredRotation += (2 * (float)Math.PI);
@@ -388,6 +389,10 @@ namespace TechnoViking
 
         }
 
+        /// <summary>
+        /// Checks all relevant collisions, only called serverside
+        /// </summary>
+        /// <param name="gameObjects"></param>
         private void CollisionActivity(List<GameObject> gameObjects)
         {
 
@@ -411,6 +416,10 @@ namespace TechnoViking
 
         }
 
+        /// <summary>
+        /// Sends a collision to clients, only called serverside
+        /// </summary>
+        /// <param name="playerindex"></param>
         private void SendCollision(byte playerindex)
         {
             foreach (NetConnection Player in mAgent.Connections)
@@ -421,6 +430,10 @@ namespace TechnoViking
             }
         }
 
+        /// <summary>
+        /// Inililizes the netcode
+        /// </summary>
+        /// <param name="gameObjects"></param>
         private void StartServerAndClient(List<GameObject> gameObjects)
         {
             if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server)
@@ -458,6 +471,10 @@ namespace TechnoViking
             }
         }
 
+        /// <summary>
+        /// Called every frame to handle net code
+        /// </summary>
+        /// <param name="gameObjects"></param>
         private void ServerAndClientActivity(List<GameObject> gameObjects)
         {
             if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server)
@@ -474,22 +491,29 @@ namespace TechnoViking
                 //Local activity
             }
         }
-
         private void ClientActivity(List<GameObject> gameObjects)
             {
+                if (PlayerList.Count > PlayerID)
+                {
+                    playermovement(PlayerList[PlayerID]);
+                }
                 //SEND INPUT
                 if (mAgent.IsPlayerConnected)
                 {
                     if (PlayerList.Count > PlayerID)
                     {
+                        if (!(PlayerList[PlayerID].keycount == PlayerList[PlayerID].oldkeycount))
+                        {
                         mAgent.WriteMessage(PlayerID);
-                        mAgent.WriteMessage(PlayerList[PlayerID].goalVelocityX);
-                        mAgent.WriteMessage(PlayerList[PlayerID].goalVelocityY);
-                        mAgent.WriteMessage(PlayerList[PlayerID].desiredRotation);
-                        //mAgent.WriteMessage(PlayerList[PlayerID].DashPressed);
-                        ////mAgent.WriteMessage(PlayerList[PlayerID].Speed);
-                        //mAgent.WriteMessage(PlayerList[PlayerID].Sprite.RotationZ);
+                        mAgent.WriteMessage((byte)PlayerList[PlayerID].keycount); //|| keycount >= mousepressnumber
+                            // if keycount >= mousepress number
+                            // send mouse position
+                            // can you trust the server to be up to date on selected spell?
+                            // probably not, but the server is king, so just change the selected spell on tic?
+                            //
+                        //mAgent.WriteMessage(PlayerList[PlayerID].desiredRotation);
                         mAgent.SendMessage(mAgent.Connections[0]);
+                        }
                     }
 
                     if (sendspell)
@@ -504,7 +528,7 @@ namespace TechnoViking
 
                 }
 
-                ////RECEIVE MESSAGE AND UPDATE POSITIONS
+                //RECEIVE MESSAGE AND UPDATE POSITIONS
 	            List<NetIncomingMessage> incomingMessages;
                 incomingMessages = mAgent.CheckForMessages();
         foreach (NetIncomingMessage incomingMessage in incomingMessages)
@@ -524,23 +548,6 @@ namespace TechnoViking
                 }
                 switch (type)
                 {
-                //case (byte)MessageType.Player1:
-                //    PlayerList[(byte)MessageType.Player1].Sprite.X = incomingMessage.ReadFloat();
-                //    PlayerList[(byte)MessageType.Player1].Sprite.Y = incomingMessage.ReadFloat();
-                //    PlayerList[(byte)MessageType.Player1].Sprite.RotationZ = incomingMessage.ReadFloat();
-                //    //PlayerList[(byte)MessageType.Player1].CooldownCircleRadius = incomingMessage.ReadFloat();
-                //    //PlayerList[(byte)MessageType.Player1].DashPressed = incomingMessage.ReadBoolean();
-                //    break;
-
-                //case (byte)MessageType.Player2:
-                //    PlayerList[(byte)MessageType.Player2].Sprite.X = incomingMessage.ReadFloat();
-                //    PlayerList[(byte)MessageType.Player2].Sprite.Y = incomingMessage.ReadFloat();
-                //    PlayerList[(byte)MessageType.Player2].Sprite.RotationZ = incomingMessage.ReadFloat();
-                //    //PlayerBallList[(byte)MessageType.Player2].CooldownCircleRadius = incomingMessage.ReadFloat();
-                //    //PlayerBallList[(byte)MessageType.Player2].DashPressed = incomingMessage.ReadBoolean();
-
-                //    break;
-
                 case (byte)MessageType.Spell:
                         byte tPlayerID = incomingMessage.ReadByte();
                         if (tPlayerID != PlayerID)
@@ -567,6 +574,8 @@ namespace TechnoViking
                         Aliveplayers.Remove(PlayerList[playerindex]);
                     }
                     
+                    
+
                     break;
 
                 case (byte)MessageType.Action:
@@ -599,7 +608,6 @@ namespace TechnoViking
     }
 
         }
-
         private void ServerActivity(List<GameObject> gameObjects)
         {
             List<NetIncomingMessage> incomingMessages; 
@@ -612,20 +620,15 @@ namespace TechnoViking
                         {
                             if (type == i)
                             {
-                                float tRotation;
-                                PlayerList[i].goalVelocityX = incomingMessage.ReadFloat();
-                                PlayerList[i].goalVelocityY = incomingMessage.ReadFloat();
+                                PlayerList[i].keycount = incomingMessage.ReadByte();
 
-                                tRotation = incomingMessage.ReadFloat();
-                                if (tRotation == float.MinValue && PlayerList[i].Sprite.Velocity != Vector3.Zero)
-                                { //Försvinner när koden uppdaterats till att förutsäga clientside
-                                    PlayerList[i].desiredRotation = (float)Math.Atan2(PlayerList[i].Sprite.Velocity.Y, PlayerList[i].Sprite.Velocity.X) +  PlayerList[i].Offset;
-                                }
+                                //PlayerList[i].desiredRotation = incomingMessage.ReadFloat();
+
                             }
                         }
                 switch (type)
                 {
-                        
+                        //för mycket, måste gå att komprimera
                     case (byte)MessageType.Spell:
                         byte tPlayerID = incomingMessage.ReadByte();
                         Int16 tSpellselect = incomingMessage.ReadInt16();
@@ -662,7 +665,13 @@ namespace TechnoViking
 	    
 
 	        //PHYSICS AND OTHER LOGIC
-            playermovement();
+            if (PlayerList.Count > 0)
+            {
+                foreach (Player p in PlayerList)
+                {
+                    playermovement(p);
+                }
+            }
             Serverrotation();
             
             CollisionActivity(gameObjects);
@@ -712,6 +721,22 @@ namespace TechnoViking
             }
         }
 
+        public void Pausecheck() 
+        {
+            if (FlatRedBall.Input.InputManager.Keyboard.KeyPushed(Keys.Escape)) 
+            {
+                //pause = true;
+                //add menubuttons, manualy update?
+                //Add a semi-transparent layer
+            }
+
+
+        }
+
+        /// <summary>
+        /// Unloads the gamescreen
+        /// </summary>
+        /// <param name="gameObjects"></param>
         public override void Kill(List<GameObject> gameObjects) 
         {
             mAgent.Shutdown();
@@ -724,7 +749,10 @@ namespace TechnoViking
             }
             gameObjects.Remove(this);
         }
-        
+       
+        /// <summary>
+        /// For easy spell handling
+        /// </summary>
         enum Spellbook : int
         {
             shadowbolt,
@@ -732,6 +760,9 @@ namespace TechnoViking
             meadbeam,
         }
 
+        /// <summary>
+        /// If connection fails
+        /// </summary>
         public bool Stop
         {
             

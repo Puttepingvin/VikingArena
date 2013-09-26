@@ -127,7 +127,6 @@
     <Compile Include="GlobalData\GlobalData.cs" />
     <Compile Include="GlobalData\MessageType.cs" />
     <Compile Include="GlobalData\Screencreator.cs" />
-    <Compile Include="JoinGameScreen.cs" />
     <Compile Include="KeyboardDispatcher.cs" />
     <Compile Include="MenuButton.cs" />
     <Compile Include="Menuscreen.cs" />

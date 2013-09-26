@@ -37,16 +37,16 @@ namespace TechnoViking
             mgame = game;
         }
 
-        float projectilecasttime = 0.5f;
+        float projectilecasttime = 0.2f;
         Projectile tempprojectile;
         //Beam tempbeam;
         //man ska inte kunna casta andra spells när man castar
         public void CastAbility(int spellindex, List<GameObject> gameObjects, float CursorX, float CursorY, Player player)
         {
             bool stop = false;
-            foreach (Projectile p in projectileQueue) 
+            foreach (Projectile p in projectileQueue)
             {
-                if (p.playerID == player.Playerindex) 
+                if (p.playerID == player.Playerindex)
                 {
                     stop = true;
                 }
