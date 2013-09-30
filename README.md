@@ -1,6 +1,6 @@
 VikingArena
 ===========
-Current Features:
+Current Features:<br/>
 *Basic movement <br/>
 *Spellcasting, including cooldowns and casttime <br/>
 *Basic multiplayer, allowing players to host and join servers <br/>
