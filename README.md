@@ -1,7 +1,7 @@
 VikingArena
 ===========
 Current Features:
-*Basic movement
-*Spellcasting, including cooldowns and casttime
-*Basic multiplayer, allowing players to host and join servers
-*Collision detection that allows players to kill eachother
+*Basic movement <br/>
+*Spellcasting, including cooldowns and casttime <br/>
+*Basic multiplayer, allowing players to host and join servers <br/>
+*Collision detection that allows players to kill eachother <br/>
