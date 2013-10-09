@@ -189,5 +189,9 @@ namespace TechnoViking
             SpriteManager.RemoveSprite(sprite);
             gameObjects.Remove(this);
         }
+
+        public override void SendState(NetworkAgent mAgent)
+        {
+        }
     }
 }

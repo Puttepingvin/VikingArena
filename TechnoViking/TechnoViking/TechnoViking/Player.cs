@@ -24,20 +24,24 @@ using FlatRedBall.Screens;
 
 namespace TechnoViking
 {
+    //81.230.67.177
     class Player : Actor
     {
-        //This class is practicly just a bunch of variables, could remove from gameobjects?
         float offset = (float)Math.PI / 2.0f;
         public float desiredRotation = 0;
-        private Sprite sprite;
-        public float goalVelocityX = 0.0f;
-        public float goalVelocityY = 0.0f;
+        private Sprite sprite; //Velocity, position
+        public float goalVelocityX = 0.0f; 
+        public float goalVelocityY = 0.0f; 
         public int keycount = 0;
         public int oldkeycount = 0;
         private bool rotationlocked;
-        private int score;
+        public int Score
+        {
+            get;
+            set;
+        } 
         double[] lastcasted = new double[3] { -100, -100, -100 };
-        Vector3 startposition = new Vector3(0, 0, 0);
+        //Vector3 startposition = new Vector3(0, 0, 0);
         float mrotationspeed = 2*(float)Math.PI;
         public float Offset 
         {
@@ -56,18 +60,18 @@ namespace TechnoViking
         {
             get { return lastcasted; }
             set { lastcasted = value; }
-        }
+        } //Synka om en ny projektil upptäcks
         public KeyboardState keystate
         {
             get;
             set;
-        }
+        } 
         public MouseState mousestate
         {
             get;
             set;
         }
-        public float Playerindex
+        public int Playerindex
         {
             get;
             set;
@@ -77,19 +81,54 @@ namespace TechnoViking
             get;
             set;
         }
-
+        public float MouseX
+        {
+            get;
+            set;
+        }
+        public float MouseY
+        {
+            get;
+            set;
+        }
+        public int OldMouseValue
+        {
+            get;
+            set;
+        }
+        public bool wheelup;
+        public bool wheeldown;
+        private const byte prevLenght = 10;
+        private Vector3 interPos = new Vector3(0 ,0 ,0);
+        public Vector3 InterPos
+        {
+            get { return interPos; }
+            set { interPos = value - sprite.Position; }
+        }
+        List<Vector2> prevPos = new List<Vector2>();
+        public List<Vector2> PrevPos 
+        {
+            get { return prevPos; }
+        }
+        public Spellbook selectedSpell = Spellbook.shadowbolt; //
 
         public Player(Game game, Sprite sprite)
             : base(game, sprite)
 
         {
             this.sprite = sprite;
+            base.Mass = 3;
         }
 
         public override void Update(List<GameObject> gameObjects)
         {
             keystate = Keyboard.GetState();
             mousestate = Mouse.GetState();
+            if (prevPos.Count >= prevLenght) 
+            {
+                prevPos.RemoveAt(0);
+            }
+            prevPos.Add(new Vector2(sprite.Position.X, sprite.Position.Y));
         }
 
         public override void Kill(List<GameObject> gameObjects) 
@@ -97,9 +136,32 @@ namespace TechnoViking
             gameObjects.Remove(this);
             SpriteManager.RemoveSprite(this.Sprite);
         }
+        
+        public Vector3 Split(Vector3 v, float angle)
+        {
+            float x = 0;
+            x = v.X * (float)Math.Cos(angle);
+            v.Y *= (float)Math.Sin(angle);
+            //FORTSÄTT HÄR
+            return v;
+            
+        }
+        
+        public enum Spellbook : int
+        {
+            shadowbolt,
+            fireball,
+            meadbeam,
+        }
 
-
-
+        public override void SendState(NetworkAgent mAgent)
+        {
+            mAgent.WriteMessage((byte)Playerindex);
+            mAgent.WriteMessage(sprite.Position.X);
+            mAgent.WriteMessage(sprite.Position.Y);
+            mAgent.WriteMessage(sprite.Velocity.X);
+            mAgent.WriteMessage(sprite.Velocity.Y);              
+        }
 
 
     }

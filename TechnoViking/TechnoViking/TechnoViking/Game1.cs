@@ -29,16 +29,14 @@ namespace TechnoViking
          TODO:
          Clean up code
          Comment code
-         Improve spellcasting
-         Loock player during beam
+         Fix beam
          Update net code
          * abstract send in actor classes
          Update Menu
          Display scores
          Save r^2
          connectionscreen
-         rotation is cosmetic, shouldn't ever be sent over network
-         only input should be sent over network outside of ticks, this takes more of a toll on the computer and less on the network, wich should be ok since our game shouldn't be that demanding from a cpu stantpoint anyway
+         * rework projectilequeue
          */
 
 

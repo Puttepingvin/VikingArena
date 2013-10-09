@@ -19,7 +19,9 @@ namespace TechnoViking.GlobalData
         Spell,
         Collision,
         Action,
-        PlayerID
+        PlayerID,
+        Tick,
+        Stop,
     }
 
 

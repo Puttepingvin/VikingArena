@@ -37,6 +37,7 @@ namespace TechnoViking
         float CursorY;
         float angle;
         int mspellindex;
+        bool positionset;
 
         public int Spellindex 
         {
@@ -87,6 +88,7 @@ namespace TechnoViking
             offsetY = ((texturePixelHeight + player.Sprite.Texture.Width) / pixelsPerUnit) / 2 * (float)Math.Sin(angle);
             sprite.Position.X = player.Sprite.Position.X + offsetX;
             sprite.Position.Y = player.Sprite.Position.Y + offsetY;
+            positionset = true;
             if (selectedSpell == 1)
             {
                 firetail = new Emittor(game, SpriteManager.AddSprite(Game1.Pixeltexture), .15f, Color.Tomato, Color.Yellow, Color.Orange,
@@ -144,5 +146,18 @@ namespace TechnoViking
             }
         }
 
+        public override void SendState(NetworkAgent mAgent)
+        {
+            if (positionset) 
+            {
+                mAgent.WriteMessage((byte)GlobalData.MessageType.Spell);
+                mAgent.WriteMessage((byte)selectedSpell);
+                mAgent.WriteMessage(angle);
+                mAgent.WriteMessage(sprite.Position.X);
+                mAgent.WriteMessage(sprite.Position.Y);
+                mAgent.WriteMessage((byte)playerID);
+                
+            }
+        }
     }
 }

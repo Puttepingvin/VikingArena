@@ -82,5 +82,9 @@ namespace TechnoViking
         {
             
         }
+
+        public override void SendState(NetworkAgent mAgent)
+        {
+        }
     }
 }

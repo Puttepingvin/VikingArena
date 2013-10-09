@@ -87,5 +87,9 @@ namespace TechnoViking
             beamsparks.Kill(gameObjects);
         }
 
+        public override void SendState(NetworkAgent mAgent)
+        {
+        }
+
     }
 }

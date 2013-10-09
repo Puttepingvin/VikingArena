@@ -26,6 +26,7 @@ namespace TechnoViking
     {
         protected Game game;
         private Sprite sprite = new Sprite();
+        private float mass;
 
         public GameObject(Game game, Sprite sprite)
         {
@@ -47,17 +48,17 @@ namespace TechnoViking
                     sprite.ScaleX = .5f * texturePixelWidth / pixelsPerUnit;
                     sprite.ScaleY = .5f * texturePixelHeight / pixelsPerUnit;
                 }
-            if (this is Actor)
-            {
-                if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Client)
-                {
-                    RemoteRole = ENetRole.ROLE_Authority;
-                }
-                else if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server)
-                {
-                    Role = ENetRole.ROLE_Authority;
-                }
-            }
+            //if (this is Actor)
+            //{
+            //    if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Client)
+            //    {
+            //        RemoteRole = ENetRole.ROLE_Authority;
+            //    }
+            //    else if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server)
+            //    {
+            //        Role = ENetRole.ROLE_Authority;
+            //    }
+            //}
 
 
         }
@@ -71,7 +72,7 @@ namespace TechnoViking
             ROLE_Authority,         // Authoritative control over the actor.
         };
         
-        ENetRole RemoteRole, Role;
+        //ENetRole RemoteRole, Role;
 
         
         
@@ -79,6 +80,13 @@ namespace TechnoViking
         {
             get { return sprite; }
             set { sprite = value; }
+        }
+
+        public float Mass 
+        {
+            get { return mass; }
+            set { mass = value; }
+
         }
 
         public bool CircleCollidesWith(GameObject gameobject)
@@ -105,6 +113,8 @@ namespace TechnoViking
         public abstract void Update(List<GameObject> gameObjects);
 
         public abstract void Kill(List<GameObject> gameObjects);
+
+        public abstract void SendState(NetworkAgent mAgent);
 
     }
 }
