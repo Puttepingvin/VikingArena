@@ -82,10 +82,17 @@ namespace TechnoViking
             set { sprite = value; }
         }
 
-        public float Mass 
+        public float InvMass 
         {
             get { return mass; }
-            set { mass = value; }
+            set {
+                if (value == 0) 
+                {
+                    mass = 0;
+                }    
+                else mass = 1/value;
+            
+            }
 
         }
 

@@ -1,0 +1,4 @@
+Ljus i varje kant
+Roughness mapping
+os normalen
+mjuka skuggor -> samplea 16ggr från ljuset igenom/16 hårdhet

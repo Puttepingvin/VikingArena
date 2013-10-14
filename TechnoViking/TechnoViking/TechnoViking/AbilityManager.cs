@@ -26,9 +26,10 @@ namespace TechnoViking
     class AbilityManager
     {
         //Ska man synka abilitymanagern när man tickar?
-        float[] cooldowns = new float[3] { 2, 1, 5 };
-        
-        Queue<Projectile> projectileQueue = new Queue<Projectile>(); 
+        float[] cooldowns = new float[3] { 0.5f, 1, 5 };
+        float blinkdistance = 10.0f;
+
+        List<Projectile> projectileList = new List<Projectile>(); 
         Game mgame;
         Sprite tempsprite;
         Texture2D texture;
@@ -41,10 +42,10 @@ namespace TechnoViking
         Projectile tempprojectile;
         //Beam tempbeam;
         //man ska inte kunna casta andra spells när man castar
-        public void CastAbility(int spellindex, List<GameObject> gameObjects, float CursorX, float CursorY, Player player)
+        public void CastAbility(int spellindex, List<GameObject> gameObjects, Player player)
         {
             bool stop = false;
-            foreach (Projectile p in projectileQueue)
+            foreach (Projectile p in projectileList)
             {
                 if (p.playerID == player.Playerindex)
                 {
@@ -55,7 +56,7 @@ namespace TechnoViking
             {
                 player.RotationLocked = true;
                 player.desiredRotation = (float)Math.Atan2(
-                CursorY - player.Sprite.Y, CursorX - player.Sprite.X) + player.Offset;
+                player.MouseY - player.Sprite.Y, player.MouseX - player.Sprite.X) + player.Offset;
                 switch (spellindex)
                 {
                     case 0:
@@ -63,20 +64,23 @@ namespace TechnoViking
                         tempsprite.TimeCreated = TimeManager.CurrentTime;
                         texture = FlatRedBallServices.Load<Texture2D>(Game1.Fireballtexture1);
                         tempsprite.Texture = texture;
-                        tempprojectile = new Projectile(mgame, tempsprite, player, spellindex, gameObjects, CursorX, CursorY);
-                        projectileQueue.Enqueue(tempprojectile);
+                        tempprojectile = new Projectile(mgame, tempsprite, player, spellindex, gameObjects, player.MouseX, player.MouseY);
+                        projectileList.Add(tempprojectile);
                         break;
                     case 1:
                         tempsprite = new Sprite();
                         tempsprite.TimeCreated = TimeManager.CurrentTime;
                         texture = FlatRedBallServices.Load<Texture2D>(Game1.Fireballtexture1);
                         tempsprite.Texture = texture;
-                        tempprojectile = new Projectile(mgame, tempsprite, player, spellindex, gameObjects, CursorX, CursorY);
-                        projectileQueue.Enqueue(tempprojectile);
+                        tempprojectile = new Projectile(mgame, tempsprite, player, spellindex, gameObjects, player.MouseX, player.MouseY);
+                        projectileList.Add(tempprojectile);
                         break;
                     case 2:
-                        //tempbeam = new Beam(mgame, SpriteManager.AddSprite(Game1.Beamtexture1), player, gameObjects, angle);
-                        //gameObjects.Add(tempbeam);
+                        float angle = 
+                        player.Sprite.Position.X += blinkdistance * (float)Math.Cos(player.desiredRotation - player.Offset);
+                        player.Sprite.Position.Y += blinkdistance * (float)Math.Sin(player.desiredRotation - player.Offset);
+                        player.Lastcasted[spellindex] = TimeManager.CurrentTime;
+                        player.RotationLocked = false; 
                         break;
                 }
             }
@@ -85,22 +89,21 @@ namespace TechnoViking
         public void Update(List<GameObject> gameObjects, List<Player> PlayerList)
         {
             
-            if (projectileQueue.Count != 0)
+            if (projectileList.Count != 0)
             {
-                while (projectileQueue.Peek().Sprite.TimeCreated < TimeManager.CurrentTime - projectilecasttime)
+                foreach(Projectile pr in new List<Projectile>(projectileList)){
+                    if (pr.Sprite.TimeCreated < TimeManager.CurrentTime - projectilecasttime)
                 {
-                    gameObjects.Add(projectileQueue.Peek());
-                    projectileQueue.Peek().SetPosition(gameObjects);
-                    PlayerList[projectileQueue.Peek().playerID].Lastcasted[projectileQueue.Peek().Spellindex] = TimeManager.CurrentTime;
-                    PlayerList[projectileQueue.Peek().playerID].RotationLocked = false;
-                    projectileQueue.Peek().Sprite.TimeCreated = TimeManager.CurrentTime;
-                    SpriteManager.AddSprite(projectileQueue.Dequeue().Sprite);
-                    
-                    if (projectileQueue.Count == 0) 
-                    {
-                        break;
-                    }
+                    gameObjects.Add(pr);
+                    pr.SetPosition(gameObjects);
+                    PlayerList[pr.playerID].Lastcasted[pr.Spellindex] = TimeManager.CurrentTime;
+                    PlayerList[pr.playerID].RotationLocked = false;
+                    pr.Sprite.TimeCreated = TimeManager.CurrentTime;
+                    SpriteManager.AddSprite(pr.Sprite);
+                    projectileList.Remove(pr);
                 }
+                }
+
             }
                 
         } 

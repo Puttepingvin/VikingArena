@@ -25,12 +25,13 @@ namespace TechnoViking
     class Projectile : Actor
     {
         private Sprite sprite;
-        private const float projectilevelocity = 20.0f;
+        private float projectilevelocity = 30.0f;
         private float offsetX = 0.0f;
         private float offsetY = 0.0f;
-        private float life = .4f;
+        private float life = 0.5f;
         Emittor firetail;
         int selectedSpell;
+        public byte damage = 0;
         private byte mplayerID;
         Player player;
         float CursorX;
@@ -55,7 +56,6 @@ namespace TechnoViking
             }
         }
 
-
         public Projectile(Game game, Sprite sprite, Player player, int selectedSpell, List<GameObject> gameObjects, float CursorX, float CursorY)
             : base(game, sprite)
         {
@@ -63,11 +63,24 @@ namespace TechnoViking
             this.sprite = sprite;
             this.CursorX = CursorX;
             this.CursorY = CursorY;
-            sprite.ScaleX = 0.3f;
-            sprite.ScaleY = 0.3f;
             mplayerID = (byte)player.Playerindex;
             this.player = player;
-
+            switch(selectedSpell){
+                case 0:
+                    sprite.ScaleX = 0.3f;
+                    sprite.ScaleY = 0.3f;
+                    base.InvMass = 2.0f;
+                    damage = 20;
+            break;
+                case 1:
+                    sprite.ScaleX = 0.6f;
+                    sprite.ScaleY = 0.6f;
+                    projectilevelocity = 20f;
+                    life = 0.7f;
+                    base.InvMass = 10.0f;
+                    damage = 20;
+            break;
+            }
             this.selectedSpell = selectedSpell;
 
         }

@@ -60,7 +60,7 @@ namespace TechnoViking
                 if (Keyboard.GetState().IsKeyDown(Keys.Enter))
                 {
                     GlobalData.GlobalData.GameData.TypeOfGame = GlobalData.GameData.GameType.Client;
-                    Creategamescreen(gameObjects, ipbox.Text);
+                    Connect(gameObjects, ipbox.Text);
                 }
             }
         }
@@ -69,10 +69,12 @@ namespace TechnoViking
         {
             switch (screentype)
             {
-                
                 case 1:
                     GlobalData.GlobalData.GameData.TypeOfGame = GlobalData.GameData.GameType.Server;
-                    Creategamescreen(gameObjects);
+                    multiplayerarena1 = new Gamescreen(game, null, gameObjects);
+                    gameObjects.Add(multiplayerarena1);
+                    this.Kill(gameObjects);
+                    gameObjects.Remove(this);
                     break;
                 case 2:
                     GlobalData.GlobalData.GameData.TypeOfGame = GlobalData.GameData.GameType.Client;
@@ -104,9 +106,11 @@ namespace TechnoViking
         /// Creates the gamescreen without specifying the IP, only as server
         /// </summary>
         /// <param name="gameObjects"></param>
-        public void Creategamescreen(List<GameObject> gameObjects)
+        public void Connect(List<GameObject> gameObjects, String ip)
         {
-            Creategamescreen(gameObjects, "");
+            ConnectScreen connect = new ConnectScreen(null, game, ip);
+            gameObjects.Add(connect);
+            this.Kill(gameObjects);
         }
 
         /// <summary>
@@ -114,19 +118,19 @@ namespace TechnoViking
         /// </summary>
         /// <param name="gameObjects"></param>
         /// <param name="ip"></param>
-        public void Creategamescreen(List<GameObject> gameObjects, string ip)
-        {
-            this.Kill(gameObjects);
-            multiplayerarena1 = new Gamescreen(game, null, gameObjects, ip);
-            gameObjects.Add(multiplayerarena1);
+        //public void Creategamescreen(List<GameObject> gameObjects, string ip)
+        //{
+        //    this.Kill(gameObjects);
+        //    multiplayerarena1 = new Gamescreen(game, null, gameObjects, ip);
+        //    gameObjects.Add(multiplayerarena1);
 
-            if (multiplayerarena1.Stop)
-            {
-                gameObjects.Remove(multiplayerarena1);
-                Createmainmenu(gameObjects);
-            }
-            else gameObjects.Remove(this);
-        }
+        //    if (multiplayerarena1.Stop)
+        //    {
+        //        gameObjects.Remove(multiplayerarena1);
+        //        Createmainmenu(gameObjects);
+        //    }
+        //    else gameObjects.Remove(this);
+        //}
 
         /// <summary>
         /// Should create all the classes needed for a joinscreen and add them to the proper lists

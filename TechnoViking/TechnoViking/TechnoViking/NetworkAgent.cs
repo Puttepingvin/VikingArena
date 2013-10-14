@@ -42,6 +42,7 @@ namespace TechnoViking
         private List<NetIncomingMessage> mIncomingMessages;
         byte nextPlayerID = 1;
 
+
         public bool IsPlayerConnected
         {
             get;
@@ -72,6 +73,7 @@ namespace TechnoViking
                 mConfig.EnableMessageType(NetIncomingMessageType.DiscoveryRequest);
                 mConfig.Port = port;
                 mConfig.EnableUPnP = true;
+                //mConfig.SimulatedMinimumLatency = 0.20f;
                 //Casts the NetPeer to a NetServer
                 mPeer = new NetServer(mConfig);
             }
@@ -141,7 +143,7 @@ namespace TechnoViking
                     case NetIncomingMessageType.StatusChanged:
                         NetConnectionStatus status = (NetConnectionStatus)incomingMessage.ReadByte();
                         if (mRole == AgentRole.Server)
-                            output += "Status Message: " + incomingMessage.ReadString() + "\n";
+                            output += "Status Message: " + incomingMessage.ReadString() + " \n";
 
                         if (status == NetConnectionStatus.Connected)
                         {

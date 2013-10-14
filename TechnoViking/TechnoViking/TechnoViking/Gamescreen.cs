@@ -20,12 +20,15 @@ namespace TechnoViking
 {
     /// <summary>
     /// BUGS:
-    /// Mouse doesn't transfer over net
-    /// Collision only works on server
+    /// Mousewheel doesn't transfer over net
+    /// Interpolation broken
     /// 
     /// DO NEXT:
-    /// Angle in collision
-    /// 
+    /// Change Velocity on blink
+    /// Better lag-compensation
+    /// More spells
+    /// Disconnect
+    /// * Spell tick
     /// 
     /// </summary>
 
@@ -34,44 +37,34 @@ namespace TechnoViking
     {
         NetworkAgent mAgent;
         Player tempplayer;
-        const float ticktime = 0.2f;
+        const float ticktime = 0.05f;
         const float speedLimit = 20.0f;
         const float accelerationspeed = 30.0f;
         const float breakacc = 20.0f;
         List<Player> PlayerList = new List<Player>();
         List<Player> Aliveplayers = new List<Player>();
         byte PlayerID = 0;
-        string mIP = "";
         //byte oldconnectionammount;
         byte Playercount;
         double roundstarted;
         AbilityManager abilitys;
         bool pause;
         double LastTick = 0;
-        float lastcollision = 0;
-
-        /*
-         Bugs:
-         * Mouse wheel doesn't transfer over network
-         
-         Important TODO:
-         * Spell tick
-         */
+        //private bool playing = true;
+        private bool ingame = true;
+        private bool inpick;
 
         public Gamescreen(Game game, Sprite sprite, List<GameObject> gameObjects)
             : base(game, sprite) 
         {
-            Stop = false;
             StartServerAndClient(gameObjects);
             abilitys = new AbilityManager(game);
 
         }
-        public Gamescreen(Game game, Sprite sprite, List<GameObject> gameObjects, string ip)
+        public Gamescreen(Game game, Sprite sprite, List<GameObject> gameObjects, NetworkAgent Agent)
             : base(game, sprite)
         {
-            Stop = false;
-            mIP = ip;
-            StartServerAndClient(gameObjects);
+            mAgent = Agent;
             abilitys = new AbilityManager(game);
         }
 
@@ -92,7 +85,7 @@ namespace TechnoViking
                 Aliveplayers.Add(PlayerList[PlayerList.Count-1]);
             }
 
-
+            //playing = true;
             AssignPlayerIndices();
         }
 
@@ -101,7 +94,7 @@ namespace TechnoViking
         /// </summary>
         private void AssignPlayerIndices()
         {
-            for (int i = 0; i < PlayerList.Count; i++)
+            for (byte i = 0; i < PlayerList.Count; i++)
             {
                 PlayerList[i].Playerindex = i;
             }
@@ -113,23 +106,22 @@ namespace TechnoViking
         /// <param name="gameObjects"></param>
         public override void Update(List<GameObject> gameObjects)
         {
-            if (PlayerList.Count > PlayerID) InputCheck();
-            
-            ServerAndClientActivity(gameObjects);
-            foreach (Player p in Aliveplayers) 
+            if (ingame)
             {
-                PlayerMovement(p);
-                Spellselection(p);
-                Spellcasting(gameObjects, p);
-                Rotation(p);
-                SaveVariables(p);
-                Vector3 temp = PlayerList[PlayerID].Sprite.Velocity;
+                if (PlayerList.Count > PlayerID) InputCheck();
+
+                ServerAndClientActivity(gameObjects);
+                foreach (Player p in Aliveplayers)
+                {
+                    PlayerMovement(p);
+                    Spellcasting(gameObjects, p);
+                    Rotation(p);
+                    SaveVariables(p);
+                    Vector3 temp = PlayerList[PlayerID].Sprite.Velocity;
+                }
+                CollisionActivity(gameObjects);
+                abilitys.Update(gameObjects, PlayerList);
             }
-            CollisionActivity(gameObjects);
-            abilitys.Update(gameObjects, PlayerList);
-
-            
-
         }
 
         /// <summary>
@@ -179,29 +171,14 @@ namespace TechnoViking
             if (PlayerList[PlayerID].keystate.IsKeyDown(Keys.S)) PlayerList[PlayerID].keycount += 2;
             if (PlayerList[PlayerID].keystate.IsKeyDown(Keys.A)) PlayerList[PlayerID].keycount += 4;
             if (PlayerList[PlayerID].keystate.IsKeyDown(Keys.D)) PlayerList[PlayerID].keycount += 8;
-            if (PlayerList[PlayerID].keystate.IsKeyDown(Keys.Q)) PlayerList[PlayerID].keycount += 16;
-            if (PlayerList[PlayerID].keystate.IsKeyDown(Keys.E)) PlayerList[PlayerID].keycount += 32;
-            if (PlayerList[PlayerID].mousestate.LeftButton == ButtonState.Pressed) PlayerList[PlayerID].keycount += 64;
-            //8
-            if (PlayerList[PlayerID].mousestate.ScrollWheelValue > PlayerList[PlayerID].OldMouseValue)
-            {
-                PlayerList[PlayerID].wheelup = true;
-                PlayerList[PlayerID].wheeldown = false; 
-            }
-            else if (PlayerList[PlayerID].mousestate.ScrollWheelValue < PlayerList[PlayerID].OldMouseValue)
-            {
-                PlayerList[PlayerID].wheelup = false;
-                PlayerList[PlayerID].wheeldown = true;
-            }
-            else 
-            {
-                PlayerList[PlayerID].wheelup = false; 
-                PlayerList[PlayerID].wheeldown = false;
-            }
+            //if (PlayerList[PlayerID].keystate.IsKeyDown(Keys.Q)) PlayerList[PlayerID].keycount += 16;
+            if (PlayerList[PlayerID].mousestate.LeftButton == ButtonState.Pressed) PlayerList[PlayerID].keycount += 32;
+            if (PlayerList[PlayerID].mousestate.RightButton == ButtonState.Pressed) PlayerList[PlayerID].keycount += 64;
+            if (PlayerList[PlayerID].keystate.IsKeyDown(Keys.Space)) { PlayerList[PlayerID].keycount += 128; }
+            
+
             PlayerList[PlayerID].MouseX = GuiManager.Cursor.WorldXAt(PlayerList[PlayerID].Sprite.Z);
             PlayerList[PlayerID].MouseY = GuiManager.Cursor.WorldYAt(PlayerList[PlayerID].Sprite.Z);
-            PlayerList[PlayerID].OldMouseValue = PlayerList[PlayerID].mousestate.ScrollWheelValue;
-            //Skicka redan här, sen, eventuellt
         }
 
         /// <summary>
@@ -239,46 +216,52 @@ namespace TechnoViking
 
                 
 
-                if (p.goalVelocityX > p.Sprite.Velocity.X + 0.1f)
+                if (p.goalVelocityX > p.Sprite.Velocity.X + 0.5f)
                 {
                     p.Sprite.Acceleration.X = accelerationspeed;
                 }
 
-                else if (p.goalVelocityX < p.Sprite.Velocity.X - 0.1f)
+                else if (p.goalVelocityX < p.Sprite.Velocity.X - 0.5f)
                 {
                     p.Sprite.Acceleration.X = -accelerationspeed;
                 }
                 else
                 {
                     p.Sprite.Acceleration.X = 0;
+                    if (p.Sprite.Velocity.X < 1 && p.Sprite.Velocity.X > -1)
+                    {
+                        p.Sprite.Velocity.X = 0;
+                    }
                 }
 
 
 
                 //Y 
-                if (p.goalVelocityY > p.Sprite.Velocity.Y + 0.1f)
+                if (p.goalVelocityY > p.Sprite.Velocity.Y + 0.5f)
                 {
                     p.Sprite.Acceleration.Y = accelerationspeed;
                 }
 
-                else if (p.goalVelocityY < p.Sprite.Velocity.Y - 0.1f)
+                else if (p.goalVelocityY < p.Sprite.Velocity.Y - 0.5f)
                 {
                     p.Sprite.Acceleration.Y = -accelerationspeed;
                 }
                 else
                 {
                     p.Sprite.Acceleration.Y = 0;
+                    if (p.Sprite.Velocity.Y < 1 && p.Sprite.Velocity.Y > -1)
+                    {
+                        p.Sprite.Velocity.Y = 0;
+                    }
                 }
 
                 //if (p.InterPos != Vector3.Zero)
                 //{
-                //    p.Sprite.Position.X += p.InterPos.X * (ticktime * (float)TimeManager.SecondDifference);
+                //    p.Sprite.Position.X = p.InterPos.X * (ticktime * (float)TimeManager.SecondDifference);
                 //    p.Sprite.Position.Y += p.InterPos.Y * (ticktime * (float)TimeManager.SecondDifference);
                 //}
 
-        }
-
-        
+        }        
 
         /// <summary>
         /// Decides the desired rotationm should be rewritten
@@ -296,7 +279,7 @@ namespace TechnoViking
                 p.desiredRotation += (2 * (float)Math.PI);
             }
 
-            if (p.desiredRotation - p.Sprite.RotationZ < p.RotationSpeed * TimeManager.SecondDifference && p.desiredRotation - p.Sprite.RotationZ > -p.RotationSpeed * TimeManager.SecondDifference)
+            if (p.desiredRotation - p.Sprite.RotationZ < p.RotationSpeed * TimeManager.SecondDifference*1.50 && p.desiredRotation - p.Sprite.RotationZ > -p.RotationSpeed * TimeManager.SecondDifference*1.50)
             {
                 p.Sprite.RotationZ = p.desiredRotation;
             }
@@ -311,35 +294,43 @@ namespace TechnoViking
 
         }
 
-        private void Spellselection(Player p) 
-        {
-            if ((((p.keycount & 16) == 16) && !((p.oldkeycount & 16) == 16))) //|| p.mousestate.ScrollWheelValue > p.OldMouseValue)
-            {
-                if ((int)p.selectedSpell > 0)
-                {
-                    p.selectedSpell--;
-                }
-                else p.selectedSpell = (TechnoViking.Player.Spellbook)Enum.GetNames(typeof(TechnoViking.Player.Spellbook)).Length - 1;
-            }
-            if ((((p.keycount & 32) == 32) && !((p.oldkeycount & 32) == 32))) //|| p.mousestate.ScrollWheelValue > p.OldMouseValue)
-            {
-                if ((int)p.selectedSpell < Enum.GetNames(typeof(TechnoViking.Player.Spellbook)).Length - 1)
-                {
-                    p.selectedSpell++;
-                }
-                else p.selectedSpell = 0;
-            }
-        }
-
+        //private void Spellselection(Player p) 
+        //{
+        //    if ((((p.keycount & 16) == 16) && !((p.oldkeycount & 16) == 16))) //|| p.mousestate.ScrollWheelValue > p.OldMouseValue)
+        //    {
+        //        if ((int)p.selectedSpell > 0)
+        //        {
+        //            p.selectedSpell--;
+        //        }
+        //        else p.selectedSpell = (TechnoViking.Player.Spellbook)Enum.GetNames(typeof(TechnoViking.Player.Spellbook)).Length - 1;
+        //    }
+        //    if ((((p.keycount & 32) == 32) && !((p.oldkeycount & 32) == 32))) //|| p.mousestate.ScrollWheelValue > p.OldMouseValue)
+        //    {
+        //        if ((int)p.selectedSpell < Enum.GetNames(typeof(TechnoViking.Player.Spellbook)).Length - 1)
+        //        {
+        //            p.selectedSpell++;
+        //        }
+        //        else p.selectedSpell = 0;
+        //    }
+        //}
+        //127.0.0.1
         /// <summary>
         /// Handles everything related to spellcasting
         /// </summary>
         /// <param name="gameObjects"></param>
         private void Spellcasting(List<GameObject> gameObjects, Player p)
         {
-            if ((p.keycount & 64) == 64)
+            if ((p.keycount & 32) == 32 && (p.oldkeycount & 32) != 32)
             {
-                abilitys.CastAbility((int)p.selectedSpell, gameObjects, p.MouseX, p.MouseY, p);
+                abilitys.CastAbility((int)p.PickedSpell[0], gameObjects, p);
+            }
+            if ((p.keycount & 64) == 64 && (p.oldkeycount & 64) != 64)
+            {
+                abilitys.CastAbility((int)p.PickedSpell[1], gameObjects, p);
+            }
+            if ((p.keycount & 128) == 128 && (p.oldkeycount & 128) != 128)
+            {
+                abilitys.CastAbility((int)p.PickedSpell[2], gameObjects, p);
             }
         }
 
@@ -350,18 +341,23 @@ namespace TechnoViking
         private void CollisionActivity(List<GameObject> gameObjects)
         {
 
-            foreach (Player pl in new List<Player>(PlayerList))
+            foreach (Player pl in new List<Player>(Aliveplayers))
             {
                 foreach (GameObject g in new List<GameObject>(gameObjects))
                 {
                     
                         if (g is Projectile)
                         {
+                            
                             if (pl.CircleCollidesWith(g))
                             {
-                                pl.Kill(gameObjects);
+                                List<Projectile> tlist = new List<Projectile>();
+                                tlist.Add((Projectile)g);
+                                
+                                pl.HP -= tlist[0].damage;
+                                Bounce(pl, g);   
                                 g.Kill(gameObjects);
-                                Aliveplayers.Remove(pl);
+                                
 
                             }
                         }
@@ -375,63 +371,93 @@ namespace TechnoViking
                         }
                     
                 }
+                if (pl.HP <= 0)
+                {
+                    pl.Kill(gameObjects);
+                    Aliveplayers.Remove(pl);
+                    if (pl.Playerindex == PlayerID) 
+                    {
+                        //playing = false;
+                    }
+                }
             }
 
         }
 
-        private void Bounce(GameObject pl, GameObject g) 
-        {
-            Vector3 adjustment = g.Sprite.Velocity;
+        //private void BounceOld(GameObject pl, GameObject g, bool move) 
+        //{
+        //    Vector3 adjustment = g.Sprite.Velocity;
 
-            g.Sprite.Velocity -= adjustment;
-            pl.Sprite.Velocity -= adjustment;
+        //    g.Sprite.Velocity -= adjustment;
+        //    pl.Sprite.Velocity -= adjustment;
 
-            double V1 = pl.Sprite.Velocity.Length();
-            double V2 = 0;
-            Vector3 posdiff = pl.Sprite.Position - g.Sprite.Position;
-            //float temp = posdiff.X / pl.Sprite.Velocity.X;
-            float angle = (float)Math.Atan2(pl.Sprite.Velocity.Y, pl.Sprite.Velocity.X);
+        //    double V1 = pl.Sprite.Velocity.Length();
+        //    double V2 = 0;
+        //    Vector3 posdiff = pl.Sprite.Position - g.Sprite.Position;
+        //    //float temp = posdiff.X / pl.Sprite.Velocity.X;
+        //    float angle = (float)Math.Atan2(pl.Sprite.Velocity.Y, pl.Sprite.Velocity.X);
 
-            float pixelsPerUnit = SpriteManager.Camera.PixelsPerUnitAt(pl.Sprite.Position.Z);
-            pl.Sprite.Position.X -= ((((pl.Sprite.Width / pixelsPerUnit) + (g.Sprite.Width+1 / pixelsPerUnit)) - posdiff.Length()) / 2) * (float)Math.Cos(angle);
-            pl.Sprite.Position.Y -= ((((pl.Sprite.Width / pixelsPerUnit) + (g.Sprite.Width+1 / pixelsPerUnit)) - posdiff.Length()) / 2) * (float)Math.Sin(angle);
-            g.Sprite.Position.X += ((((pl.Sprite.Width / pixelsPerUnit) + (g.Sprite.Width+1 / pixelsPerUnit)) - posdiff.Length()) / 2) * (float)Math.Cos(angle);
-            g.Sprite.Position.Y += ((((pl.Sprite.Width / pixelsPerUnit) + (g.Sprite.Width+1 / pixelsPerUnit)) - posdiff.Length()) / 2) * (float)Math.Sin(angle);
-            posdiff = pl.Sprite.Position - g.Sprite.Position;
+        //    if (move)
+        //    {
+        //        float pixelsPerUnit = SpriteManager.Camera.PixelsPerUnitAt(pl.Sprite.Position.Z);
+        //        pl.Sprite.Position.X -= ((((pl.Sprite.Width / pixelsPerUnit) + (g.Sprite.Width + (1/float.MinValue) / pixelsPerUnit)) - posdiff.Length()) / 2) * (float)Math.Cos(angle);
+        //        pl.Sprite.Position.Y -= ((((pl.Sprite.Width / pixelsPerUnit) + (g.Sprite.Width + (1 / float.MinValue) / pixelsPerUnit)) - posdiff.Length()) / 2) * (float)Math.Sin(angle);
+        //        g.Sprite.Position.X += ((((pl.Sprite.Width / pixelsPerUnit) + (g.Sprite.Width + (1 / float.MinValue) / pixelsPerUnit)) - posdiff.Length()) / 2) * (float)Math.Cos(angle);
+        //        g.Sprite.Position.Y += ((((pl.Sprite.Width / pixelsPerUnit) + (g.Sprite.Width + (1 / float.MinValue) / pixelsPerUnit)) - posdiff.Length()) / 2) * (float)Math.Sin(angle);
+        //        posdiff = pl.Sprite.Position - g.Sprite.Position;
+        //    }
+        //    double a = pl.Sprite.Velocity.Length();
+        //    double b = posdiff.Length();
+        //    Vector3 triangle3 = g.Sprite.Position - (pl.Sprite.Position + pl.Sprite.Velocity);
+        //    double c = triangle3.Length();
+        //    double theta = 0;
+        //    if (a* b!=0){
+        //        theta = 2 * Math.PI - Math.Acos((a * a + b * b - c * c) / (2 * a * b));
+        //        if ((a * a + b * b - c * c) / (2 * a * b) > 1)
+        //        {
+        //            theta = 2 * Math.PI;
+        //        }
+        //    }
 
-            double a = pl.Sprite.Velocity.Length();
-            double b = posdiff.Length();
-            Vector3 triangle3 = g.Sprite.Position - (pl.Sprite.Position + pl.Sprite.Velocity);
-            double c = triangle3.Length();
-            double theta = 0;
-            if (a* b!=0){
-                theta = 2 * Math.PI - Math.Acos((a * a + b * b - c * c) / (2 * a * b));
-                if ((a * a + b * b - c * c) / (2 * a * b) > 1)
-                {
-                    theta = 2 * Math.PI;
-                }
-            }
-
-            double M1 = pl.Mass;
-            double M2 = g.Mass;
-            double A1;
-            double A2;
+        //    double M1 = 1/pl.InvMass;
+        //    double M2 = 1/g.InvMass;
+        //    double A1;
+        //    double A2;
             
-            V2 = ((2 * M1 * Math.Cos(theta)) * V1) / (M1 + M2);
-            V1 = (Math.Sqrt(M1 * M1 + M2 * M2 - 2 * M1 * M2 * Math.Cos(2 * theta)) * V1) / (M1 + M2);
-            A1 = angle + Math.Atan2(M1 - M2 * Math.Cos(2 * theta) , M2 * Math.Sin(2 * theta));
-            A2 = theta + angle;
+        //    V2 = ((2 * M1 * Math.Cos(theta)) * V1) / (M1 + M2);
+        //    V1 = (Math.Sqrt(M1 * M1 + M2 * M2 - 2 * M1 * M2 * Math.Cos(2 * theta)) * V1) / (M1 + M2);
+        //    A1 = angle + Math.Atan2(M1 - M2 * Math.Cos(2 * theta) , M2 * Math.Sin(2 * theta));
+        //    A2 = theta + angle;
 
 
 
 
-            pl.Sprite.Velocity.X = (float)(V1 * Math.Cos(A1));
-            pl.Sprite.Velocity.Y = (float)(V1 * Math.Sin(A1));
-            g.Sprite.Velocity.X = (float)(V2 * Math.Cos(A2));
-            g.Sprite.Velocity.Y = (float)(V2 * Math.Sin(A2));
+        //    pl.Sprite.Velocity.X = (float)(V1 * Math.Cos(A1));
+        //    pl.Sprite.Velocity.Y = (float)(V1 * Math.Sin(A1));
+        //    g.Sprite.Velocity.X = (float)(V2 * Math.Cos(A2));
+        //    g.Sprite.Velocity.Y = (float)(V2 * Math.Sin(A2));
 
-            pl.Sprite.Velocity += adjustment;
-            g.Sprite.Velocity += adjustment;
+        //    pl.Sprite.Velocity += adjustment;
+        //    g.Sprite.Velocity += adjustment;
+        //}
+
+        private void Bounce(GameObject a, GameObject b) 
+        {
+            Vector3 rv = b.Sprite.Velocity - a.Sprite.Velocity;
+            Vector3 normal = b.Sprite.Position - a.Sprite.Position;
+            normal.Normalize();
+
+            float velAlongNormal = Vector3.Dot( rv, normal );
+ 
+            if(velAlongNormal > 0) return;
+            
+            float j = -velAlongNormal;
+            j /= a.InvMass + b.InvMass;
+ 
+            Vector3 impulse = j * normal;
+            a.Sprite.Velocity -= a.InvMass * impulse * 2;
+            b.Sprite.Velocity += b.InvMass * impulse * 2;
+                
         }
 
         /// <summary>
@@ -442,8 +468,6 @@ namespace TechnoViking
         {
             p.oldkeycount = p.keycount;
         }
-
-
 
         /// <summary>
         /// Inililizes the netcode
@@ -458,30 +482,7 @@ namespace TechnoViking
             }
             else if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Client)
             {
-                mAgent = new NetworkAgent(AgentRole.Client, "VikingArcade");
-                //mAgent.forwardport();
-                mAgent.Connect(mIP);
-                Stop = false;
-                double timeout = TimeManager.CurrentTime;
-                int i = 0;
-                while (mAgent.Connections.Count == 0 && !Stop) 
-                {
-                    if (i >= 30) 
-                    {
-                        Stop = true;
-                        
-                    }
-                    System.Threading.Thread.Sleep(100);
-                    i++;
-                }
-
-
-                if (!Stop)
-                {
-                    mAgent.WriteMessage((byte)MessageType.Action);
-                    mAgent.WriteMessage((byte)ActionType.ServerRestart);
-                    mAgent.SendMessage(mAgent.Connections[0], true);
-                }
+                throw new Exception("Tried to creater server as client");
                 
             }
         }
@@ -517,13 +518,11 @@ namespace TechnoViking
                         {
                         mAgent.WriteMessage(PlayerID);
                         mAgent.WriteMessage((byte)PlayerList[PlayerID].keycount);
-                        if ((PlayerList[PlayerID].keycount & 64) == 64)
+                        if ((PlayerList[PlayerID].keycount & 64) == 64 || (PlayerList[PlayerID].keycount & 32) == 32 || (PlayerList[PlayerID].keycount & 128) == 128)
                         {
                             mAgent.WriteMessage(PlayerList[PlayerID].MouseX);
                             mAgent.WriteMessage(PlayerList[PlayerID].MouseY);
                         }
-                        mAgent.WriteMessage(PlayerList[PlayerID].wheelup);
-                        mAgent.WriteMessage(PlayerList[PlayerID].wheeldown);
                         mAgent.SendMessage(mAgent.Connections[0]);
                         }
                         if (LastTick + ticktime < TimeManager.CurrentTime) 
@@ -548,39 +547,15 @@ namespace TechnoViking
                     if (type == i && i != PlayerID)
                     {
                         PlayerList[i].keycount = incomingMessage.ReadByte();
-                        if ((PlayerList[i].keycount & 64) == 64)
+                        if ((PlayerList[i].keycount & 64) == 64 || (PlayerList[i].keycount & 32) == 32 || (PlayerList[i].keycount & 128) == 128)
                         {
                             PlayerList[i].MouseX = incomingMessage.ReadFloat();
                             PlayerList[i].MouseY = incomingMessage.ReadFloat();
                         }
-                        PlayerList[i].wheelup = incomingMessage.ReadBoolean();
-                        PlayerList[i].wheeldown = incomingMessage.ReadBoolean();
                     }
                 }
                 switch (type)
                 {
-                    case (byte)MessageType.Collision:
-                        byte playerindex = incomingMessage.ReadByte();
-                        if (roundstarted + 1 < TimeManager.CurrentTime)
-                        {
-                            PlayerList[playerindex].Kill(gameObjects);
-                            foreach (GameObject g in new List<GameObject>(gameObjects))
-                            {
-                                if (g is Actor)
-                                {
-                                    if (g.CircleCollidesWith(PlayerList[playerindex]))
-                                    {
-                                        g.Kill(gameObjects);
-                                    }
-                                }
-                            }
-                            Aliveplayers.Remove(PlayerList[playerindex]);
-                        }
-                    
-                    
-
-                    break;
-
                 case (byte)MessageType.Action:
                     switch (incomingMessage.ReadByte()) 
                     {
@@ -593,8 +568,6 @@ namespace TechnoViking
 
                     case (byte)MessageType.Tick:
                     ReadActor(incomingMessage);
-
-
                         break;
                 //case (byte)MessageType.Scores:
                 //    ScoreHudInstance.Score1 = incomingMessage.ReadByte();
@@ -627,13 +600,11 @@ namespace TechnoViking
                             if (type == i)
                             {
                                 PlayerList[i].keycount = incomingMessage.ReadByte();
-                                if ((PlayerList[i].keycount & 64) == 64)
+                                if ((PlayerList[i].keycount & 64) == 64 || (PlayerList[i].keycount & 32) == 32 || (PlayerList[i].keycount & 128) == 128)
                                 {
                                     PlayerList[i].MouseX = incomingMessage.ReadFloat();
                                     PlayerList[i].MouseY = incomingMessage.ReadFloat();
                                 }
-                                PlayerList[i].wheelup = incomingMessage.ReadBoolean();
-                                PlayerList[i].wheeldown = incomingMessage.ReadBoolean();
                             }
                         }
                 switch (type)
@@ -665,13 +636,11 @@ namespace TechnoViking
                     {
                         mAgent.WriteMessage(i);
                         mAgent.WriteMessage((byte)PlayerList[i].keycount);
-                        if ((PlayerList[i].keycount & 64) == 64)
+                        if ((PlayerList[i].keycount & 64) == 64 || (PlayerList[i].keycount & 32) == 32 || (PlayerList[i].keycount & 128) == 128)
                         {
                             mAgent.WriteMessage(PlayerList[i].MouseX);
                             mAgent.WriteMessage(PlayerList[i].MouseY);
                         }
-                        mAgent.WriteMessage(PlayerList[i].wheelup);
-                        mAgent.WriteMessage(PlayerList[i].wheeldown);
                         mAgent.SendMessage(Player);
                     }
                 }
@@ -724,7 +693,7 @@ namespace TechnoViking
 
                     foreach (Vector2 pos in PlayerList[i].PrevPos) 
                     {
-                        if (pos.X == tX && pos.Y == tY)
+                        if (pos.X <= tX + 0.1 && pos.X >= tX - 0.1 && pos.Y <= tY +0.1 && pos.Y >= tY - 0.1)
                         {
                             old = true;
                             break;
@@ -733,7 +702,6 @@ namespace TechnoViking
 
                     if (!old)
                     {
-
                         PlayerList[i].Sprite.Position = new Vector3(tX, tY, 0);
                         PlayerList[i].Sprite.Velocity.X = tVX;
                         PlayerList[i].Sprite.Velocity.Y = tVY;
@@ -765,7 +733,6 @@ namespace TechnoViking
    //81.230.67.177
 
         }
-
 
         public void Pausecheck() 
         {

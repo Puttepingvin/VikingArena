@@ -34,13 +34,31 @@ namespace TechnoViking
         public float goalVelocityY = 0.0f; 
         public int keycount = 0;
         public int oldkeycount = 0;
+        public float Radius
+        {
+            get;
+            set;
+        }
         private bool rotationlocked;
+        private byte hp = 100;
+        public byte HP 
+        {
+            get { return hp; }
+            set { hp = value; }
+
+        }
         public int Score
         {
             get;
             set;
         } 
         double[] lastcasted = new double[3] { -100, -100, -100 };
+        double[] pickedspell = new double[3] { 0, 1, 2 };
+        public double[] PickedSpell
+        {
+            get { return pickedspell; }
+            set { pickedspell = value; }
+        }
         //Vector3 startposition = new Vector3(0, 0, 0);
         float mrotationspeed = 2*(float)Math.PI;
         public float Offset 
@@ -71,7 +89,7 @@ namespace TechnoViking
             get;
             set;
         }
-        public int Playerindex
+        public byte Playerindex
         {
             get;
             set;
@@ -96,9 +114,7 @@ namespace TechnoViking
             get;
             set;
         }
-        public bool wheelup;
-        public bool wheeldown;
-        private const byte prevLenght = 10;
+        private const byte prevLenght = 20;
         private Vector3 interPos = new Vector3(0 ,0 ,0);
         public Vector3 InterPos
         {
@@ -117,7 +133,7 @@ namespace TechnoViking
 
         {
             this.sprite = sprite;
-            base.Mass = 3;
+            base.InvMass = 3;
         }
 
         public override void Update(List<GameObject> gameObjects)
@@ -129,6 +145,7 @@ namespace TechnoViking
                 prevPos.RemoveAt(0);
             }
             prevPos.Add(new Vector2(sprite.Position.X, sprite.Position.Y));
+
         }
 
         public override void Kill(List<GameObject> gameObjects) 
@@ -137,26 +154,16 @@ namespace TechnoViking
             SpriteManager.RemoveSprite(this.Sprite);
         }
         
-        public Vector3 Split(Vector3 v, float angle)
-        {
-            float x = 0;
-            x = v.X * (float)Math.Cos(angle);
-            v.Y *= (float)Math.Sin(angle);
-            //FORTSÄTT HÄR
-            return v;
-            
-        }
-        
         public enum Spellbook : int
         {
             shadowbolt,
             fireball,
-            meadbeam,
+            //meadbeam,
         }
 
         public override void SendState(NetworkAgent mAgent)
         {
-            mAgent.WriteMessage((byte)Playerindex);
+            mAgent.WriteMessage(Playerindex);
             mAgent.WriteMessage(sprite.Position.X);
             mAgent.WriteMessage(sprite.Position.Y);
             mAgent.WriteMessage(sprite.Velocity.X);
