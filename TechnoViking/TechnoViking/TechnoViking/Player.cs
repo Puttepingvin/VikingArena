@@ -19,6 +19,7 @@ using FlatRedBall.Gui;
 using FlatRedBall.Math.Geometry;
 #endif
 using FlatRedBall.Screens;
+using TechnoViking.GlobalData;
 
 
 
@@ -27,7 +28,6 @@ namespace TechnoViking
     //81.230.67.177
     class Player : Actor
     {
-        float offset = (float)Math.PI / 2.0f;
         public float desiredRotation = 0;
         private Sprite sprite; //Velocity, position
         public float goalVelocityX = 0.0f; 
@@ -41,6 +41,7 @@ namespace TechnoViking
         }
         private bool rotationlocked;
         private byte hp = 100;
+        public float radius;
         public byte HP 
         {
             get { return hp; }
@@ -53,18 +54,28 @@ namespace TechnoViking
             set;
         } 
         double[] lastcasted = new double[3] { -100, -100, -100 };
-        double[] pickedspell = new double[3] { 0, 1, 2 };
-        public double[] PickedSpell
+        byte[] pickedspell = new byte[3] { 0, 1, 2 };
+        byte playerskin = 0;
+        public byte[] PickedSpell
         {
             get { return pickedspell; }
             set { pickedspell = value; }
         }
+        public byte Playerskin {
+            get { return playerskin; }
+            set { playerskin = value;
+            sprite.Texture = FlatRedBallServices.Load<Texture2D>(Textures.playertextures[value]);
+            Pixelsieze();
+            radius = sprite.Texture.Width;
+            if (value == 2)
+            {
+                sprite.ScaleX *= 0.5f;
+                sprite.ScaleY *= 0.5f;
+            }
+            }
+        }
         //Vector3 startposition = new Vector3(0, 0, 0);
         float mrotationspeed = 2*(float)Math.PI;
-        public float Offset 
-        {
-            get { return offset; }
-        }
         public float RotationSpeed 
         {
             get { return mrotationspeed; }
@@ -134,6 +145,7 @@ namespace TechnoViking
         {
             this.sprite = sprite;
             base.InvMass = 3;
+            base.Softness = 0.2f;
         }
 
         public override void Update(List<GameObject> gameObjects)

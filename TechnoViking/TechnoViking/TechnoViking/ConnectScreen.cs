@@ -34,6 +34,7 @@ namespace TechnoViking
             timeout = TimeManager.CurrentTime;
             mAgent = new NetworkAgent(AgentRole.Client, "VikingArcade");
             mAgent.Connect(mIP);
+            tries++;
             prompter = FlatRedBall.Graphics.TextManager.AddText("Attempting to Connect, Attempt #" + tries + " of 4");
             prompter.Position.Y += 7;
             prompter.Position.X -= 5;
@@ -44,16 +45,16 @@ namespace TechnoViking
             {
                 StopTrying(gameObjects);
             }
-            else if (timeout + 5 < TimeManager.CurrentTime) 
+            else if (mAgent.Connections.Count == 1) 
+            {
+                Creategamescreen(gameObjects);
+            }
+            else if (timeout + 5 < TimeManager.CurrentTime)
             {
                 mAgent.Connect(mIP);
                 tries++;
                 prompter.DisplayText = "Attempting to Connect, Attempt #" + tries + " of 4";
                 timeout = TimeManager.CurrentTime;
-            }
-            if (mAgent.Connections.Count == 1) 
-            {
-                Creategamescreen(gameObjects);
             }
         }
 

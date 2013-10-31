@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using FlatRedBall;
 using FlatRedBall.Graphics;
 using FlatRedBall.Utilities;
+using TechnoViking.GlobalData;
 
 using Microsoft.Xna.Framework;
 #if !FRB_MDX
@@ -42,7 +43,7 @@ namespace TechnoViking
             this.player = player;
             this.angle = angle;
             PositionRotation(); 
-            beamsparks = new Emittor(game, SpriteManager.AddSprite(Game1.Pixeltexture), 0.5f , Color.White, Color.Pink, Color.LightPink, 0.3f,
+            beamsparks = new Emittor(game, SpriteManager.AddSprite(Textures.Pixeltexture), 0.5f , Color.White, Color.Pink, Color.LightPink, 0.3f,
                 float.MaxValue, this, 1.0f, (angle - (float)Math.PI / 2) - 0.3f, (angle - (float)Math.PI / 2) + 0.3f, rotationoffset, true);
             gameObjects.Add(beamsparks);
         }

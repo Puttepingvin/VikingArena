@@ -6,7 +6,7 @@ using Lidgren.Network;
 using FlatRedBall;
 using FlatRedBall.Graphics;
 using FlatRedBall.Utilities;
-
+using TechnoViking.GlobalData;
 using Microsoft.Xna.Framework;
 #if !FRB_MDX
 using System.Linq;
@@ -91,11 +91,11 @@ namespace TechnoViking
         private void Createmainmenu(List<GameObject> gameObjects) 
         {
 
-            MenuButton CreateServer = new MenuButton(game, SpriteManager.AddSprite(Game1.MenuButtonTexture1), 1.0f, this);
+            MenuButton CreateServer = new MenuButton(game, SpriteManager.AddSprite(Textures.MenuButtonTexture1), 1);
             gameObjects.Add(CreateServer);
             menubuttons.Add(CreateServer);
-            CreateServer.Sprite.Position.Y += 6;
-            MenuButton JoinServer = new MenuButton(game, SpriteManager.AddSprite(Game1.MenuButtonTexture2), 2.0f, this);
+            CreateServer.Sprite.Position.Y += 120;
+            MenuButton JoinServer = new MenuButton(game, SpriteManager.AddSprite(Textures.MenuButtonTexture2), 2);
             gameObjects.Add(JoinServer);
             menubuttons.Add(JoinServer);
             screentype = Screentype.Main;
@@ -144,8 +144,8 @@ namespace TechnoViking
                 ipbox = new TextBox(0, 0, 20);
                 ipbox.Selected = true;
                 prompter = FlatRedBall.Graphics.TextManager.AddText("Enter the IP of the server you wish to join");
-                prompter.Position.Y += 7;
-                prompter.Position.X -= 5;
+                prompter.Position.Y += 140;
+                prompter.Position.X -= 100;
                 GlobalData.GlobalData.keyboardDispatcher.Subscriber = ipbox;
                 screentype = Screentype.Join;
             }

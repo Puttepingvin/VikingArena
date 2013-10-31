@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using FlatRedBall;
 using FlatRedBall.Graphics;
 using FlatRedBall.Utilities;
+using TechnoViking.GlobalData;
 
 using Microsoft.Xna.Framework;
 #if !FRB_MDX
@@ -25,9 +26,7 @@ namespace TechnoViking
     class Projectile : Actor
     {
         private Sprite sprite;
-        private float projectilevelocity = 30.0f;
-        private float offsetX = 0.0f;
-        private float offsetY = 0.0f;
+        private float projectilevelocity = 600.0f;
         private float life = 0.5f;
         Emittor firetail;
         int selectedSpell;
@@ -38,7 +37,6 @@ namespace TechnoViking
         float CursorY;
         float angle;
         int mspellindex;
-        bool positionset;
 
         public int Spellindex 
         {
@@ -65,21 +63,20 @@ namespace TechnoViking
             this.CursorY = CursorY;
             mplayerID = (byte)player.Playerindex;
             this.player = player;
-            switch(selectedSpell){
+            switch (selectedSpell)
+            {
                 case 0:
-                    sprite.ScaleX = 0.3f;
-                    sprite.ScaleY = 0.3f;
+                    sprite.Width = 20;
+                    sprite.Height = 20;
                     base.InvMass = 2.0f;
-                    damage = 20;
-            break;
+                    damage = 40;
+                    break;
                 case 1:
-                    sprite.ScaleX = 0.6f;
-                    sprite.ScaleY = 0.6f;
-                    projectilevelocity = 20f;
-                    life = 0.7f;
+                    sprite.Width = 40;
+                    sprite.Height = 40;
                     base.InvMass = 10.0f;
                     damage = 20;
-            break;
+                    break;
             }
             this.selectedSpell = selectedSpell;
 
@@ -90,21 +87,13 @@ namespace TechnoViking
         {
             angle = (float)Math.Atan2(
                 CursorY - player.Sprite.Y, CursorX - player.Sprite.X);
-            sprite.Position = player.Sprite.Position;
+            sprite.Position = player.Sprite.Position + new Vector3((player.Sprite.Height-sprite.Height) * (float)Math.Cos(angle), (player.Sprite.Width - sprite.Width) * (float)Math.Sin(angle), 0);
             sprite.Velocity.X = (float)Math.Cos(angle) * projectilevelocity;
             sprite.Velocity.Y = (float)Math.Sin(angle) * projectilevelocity;
             sprite.RotationZ = angle;
-            float texturePixelWidth = sprite.Texture.Width;
-            float texturePixelHeight = sprite.Texture.Height;
-            float pixelsPerUnit = SpriteManager.Camera.PixelsPerUnitAt(sprite.Z);
-            offsetX = ((texturePixelWidth + player.Sprite.Texture.Width) / pixelsPerUnit) / 2 * (float)Math.Cos(angle);
-            offsetY = ((texturePixelHeight + player.Sprite.Texture.Width) / pixelsPerUnit) / 2 * (float)Math.Sin(angle);
-            sprite.Position.X = player.Sprite.Position.X + offsetX;
-            sprite.Position.Y = player.Sprite.Position.Y + offsetY;
-            positionset = true;
             if (selectedSpell == 1)
             {
-                firetail = new Emittor(game, SpriteManager.AddSprite(Game1.Pixeltexture), .15f, Color.Tomato, Color.Yellow, Color.Orange,
+                firetail = new Emittor(game, SpriteManager.AddSprite(Textures.Pixeltexture), .15f, Color.Tomato, Color.Yellow, Color.Orange,
                     0.05f, float.MaxValue, this, 1, (angle + (float)Math.PI / 2), ((angle + (float)Math.PI * 3 / 2)), 0, false);
                 gameObjects.Add(firetail);
             }
@@ -149,7 +138,7 @@ namespace TechnoViking
             gameObjects.Remove(this);
             if (selectedSpell != 1)
             {
-                Emittor explosion = new Emittor(game, SpriteManager.AddSprite(Game1.Pixeltexture), .3f, Color.Tomato, Color.Yellow, Color.Orange,
+                Emittor explosion = new Emittor(game, SpriteManager.AddSprite(Textures.Pixeltexture), .3f, Color.Tomato, Color.Yellow, Color.Orange,
                     0.3f, 0.3f, sprite.Position, 3, (0), ((float)Math.PI * 2));
                 gameObjects.Add(explosion);
             }
@@ -161,7 +150,7 @@ namespace TechnoViking
 
         public override void SendState(NetworkAgent mAgent)
         {
-            if (positionset) 
+            //if (positionset) 
             {
                 mAgent.WriteMessage((byte)GlobalData.MessageType.Spell);
                 mAgent.WriteMessage((byte)selectedSpell);

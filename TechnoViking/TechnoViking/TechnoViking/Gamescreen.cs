@@ -20,16 +20,19 @@ namespace TechnoViking
 {
     /// <summary>
     /// BUGS:
-    /// Mousewheel doesn't transfer over net
-    /// Interpolation broken
+    /// Interpolation broken!
+    /// 
+    /// MAYBE
+    /// Disconnect
+    /// Change Velocity on blink
     /// 
     /// DO NEXT:
-    /// Change Velocity on blink
-    /// Better lag-compensation
-    /// More spells
-    /// Disconnect
+
+    /// More spells, MOAR SPELLS
     /// * Spell tick
-    /// 
+    ///
+    /// ALWAYS
+    /// Better lag-compensation!!!
     /// </summary>
 
 
@@ -38,27 +41,38 @@ namespace TechnoViking
         NetworkAgent mAgent;
         Player tempplayer;
         const float ticktime = 0.05f;
-        const float speedLimit = 20.0f;
-        const float accelerationspeed = 30.0f;
-        const float breakacc = 20.0f;
+        const float speedLimit = 400.0f;
+        const float accelerationspeed = 1000.0f;
+        const float breakacc = 400.0f;
         List<Player> PlayerList = new List<Player>();
         List<Player> Aliveplayers = new List<Player>();
         byte PlayerID = 0;
-        //byte oldconnectionammount;
         byte Playercount;
         double roundstarted;
         AbilityManager abilitys;
-        bool pause;
+        //bool pause;
+        byte mouseover = 0;
         double LastTick = 0;
-        //private bool playing = true;
-        private bool ingame = true;
-        private bool inpick;
+        private GameState gamestate = GameState.Picking;
+        List<MenuButton> PickButtons = new List<MenuButton>();
+        byte[] pickedspell = new byte[3] { 0, 0, 0 };
+        byte playertexture = 0;
+        List<Sprite> cosmetics = new List<Sprite>();
+        private enum GameState
+        {
+            Playing,
+            Watching,
+            Picking,
+            Waiting
+        }
+        private bool ready;
 
         public Gamescreen(Game game, Sprite sprite, List<GameObject> gameObjects)
             : base(game, sprite) 
         {
             StartServerAndClient(gameObjects);
             abilitys = new AbilityManager(game);
+            LoadPick(gameObjects);
 
         }
         public Gamescreen(Game game, Sprite sprite, List<GameObject> gameObjects, NetworkAgent Agent)
@@ -66,6 +80,174 @@ namespace TechnoViking
         {
             mAgent = Agent;
             abilitys = new AbilityManager(game);
+            LoadPick(gameObjects);
+        }
+
+
+        /// <summary>
+        /// Updates the game screen
+        /// </summary>
+        /// <param name="gameObjects"></param>
+        public override void Update(List<GameObject> gameObjects)
+        {
+            if (gamestate == GameState.Playing)
+            {
+                InputCheck();
+            }
+            if (gamestate == GameState.Picking) PickUpdate();
+            
+            ServerAndClientActivity(gameObjects);
+
+            if (gamestate == GameState.Playing || gamestate == GameState.Watching)
+            {
+                foreach (Player p in Aliveplayers)
+                {
+                    PlayerMovement(p);
+                    Spellcasting(gameObjects, p);
+                    Rotation(p);
+                    SaveVariables(p);
+                    Vector3 temp = PlayerList[PlayerID].Sprite.Velocity;
+                }
+                CollisionActivity(gameObjects);
+                abilitys.Update(gameObjects, PlayerList);
+                //CameraUpdate();
+            }
+        }
+
+        private void LoadPick(List<GameObject> gameObjects) 
+        {
+            foreach (NetConnection Player in mAgent.Connections)
+            {
+                Player.Ready = false;
+            }
+            foreach (Player p in PlayerList)
+            {
+                p.Kill(gameObjects);
+            }
+            foreach (GameObject g in new List<GameObject>(gameObjects))
+            {
+                if (g is Projectile)
+                {
+                    g.Kill(gameObjects);
+                }
+            }
+            PlayerList.Clear();
+            Aliveplayers.Clear();
+            for (byte i = 0; i < 12; i++) 
+            {
+                if (i < 9) PickButtons.Add(new MenuButton(game, SpriteManager.AddSprite(Textures.spelltextures[i]), i));
+                else PickButtons.Add(new MenuButton(game, SpriteManager.AddSprite(Textures.playertextures[i-9]), i));
+                PickButtons[i].Sprite.Position.Y -= i%3 * 100 - 300;
+                PickButtons[i].Sprite.Position.X += ((i / 3) * 100) - 150f;
+                PickButtons[i].Sprite.Width = 50;
+                PickButtons[i].Sprite.Height = 50;
+                //for (int n = 0; n < 3; n++) 
+                //{
+                    
+                //}
+            }
+            for (int i = 0; i <= 9; i += 3)
+            {
+                cosmetics.Add(new Sprite());
+                cosmetics[cosmetics.Count - 1].Texture = FlatRedBallServices.Load<Texture2D>(Textures.PickHighlight);
+                cosmetics[cosmetics.Count - 1].Position = PickButtons[i].Sprite.Position;
+                cosmetics[cosmetics.Count - 1].Width = 80;
+                cosmetics[cosmetics.Count - 1].Height = 80;
+                SpriteManager.AddSprite(cosmetics[cosmetics.Count - 1]);
+            }
+
+            Sprite t = new Sprite();
+            t.Texture = FlatRedBallServices.Load<Texture2D>(Textures.Go);
+            PickButtons.Add(new MenuButton(game, t, 254));
+            SpriteManager.AddSprite(t);
+            t.Position = new Vector3(400, -250, 0);
+
+        }
+
+        private void PickUpdate()
+        {
+            byte oldmouseover = mouseover;
+            mouseover = 255;
+            foreach (MenuButton m in PickButtons) 
+            {
+                if (m.MouseOver())
+                {
+                    mouseover = m.Buttonindex;
+                    break;
+                }
+            }
+            if (mouseover != oldmouseover) 
+            {
+                if (mouseover < 254)
+                {
+                    //show new spellinfo
+                    foreach (Sprite s in cosmetics)
+                    {
+                        if (s.Position == new Vector3(-400, -250, 0))
+                        {
+                            SpriteManager.RemoveSprite(s);
+                        }
+                    }
+                    cosmetics.Add(new Sprite());
+                    cosmetics[cosmetics.Count - 1].Texture = PickButtons[mouseover].Sprite.Texture;
+                    cosmetics[cosmetics.Count - 1].Position = new Vector3(-400, -250, 0);
+                    cosmetics[cosmetics.Count - 1].Width = 100;
+                    cosmetics[cosmetics.Count - 1].Height = 100;
+ 
+                    SpriteManager.AddSprite(cosmetics[cosmetics.Count - 1]);
+                }
+            }
+            if (Mouse.GetState().LeftButton == ButtonState.Pressed) 
+            {
+                if (mouseover == 254) 
+                {
+                    foreach (MenuButton m in PickButtons) 
+                    {
+                        if (m.Buttonindex == 254) 
+                        {
+                            m.Sprite.Texture = FlatRedBallServices.Load<Texture2D>(Textures.Waiting);
+                        }
+                    }
+                    if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server) 
+                    {
+                        ready = true;
+                    }
+                    else if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Client) 
+                    {
+                        mAgent.WriteMessage((byte)MessageType.Ready);
+                        mAgent.WriteMessage(pickedspell[0]);
+                        mAgent.WriteMessage(pickedspell[1]);
+                        mAgent.WriteMessage(pickedspell[2]);
+                        mAgent.WriteMessage(playertexture);
+                        mAgent.SendMessage(mAgent.Connections[0], true);
+                    }
+                }
+                else if (mouseover != 255)
+                {
+                    if (mouseover < 9)
+                    {
+                        pickedspell[mouseover / 3] = (byte)(mouseover % 3);
+                    }
+                    else if (mouseover < 12) 
+                    {
+                        playertexture = (byte)(mouseover - 9);
+                    }
+                    //%3 is temp
+                    foreach (Sprite s in cosmetics)
+                    {
+                        if (s.Position.X == PickButtons[mouseover].Sprite.Position.X)
+                        {
+                            SpriteManager.RemoveSprite(s);
+                        }
+                    }
+                    cosmetics.Add(new Sprite());
+                    cosmetics[cosmetics.Count - 1].Texture = FlatRedBallServices.Load<Texture2D>(Textures.PickHighlight);
+                    cosmetics[cosmetics.Count - 1].Position = PickButtons[mouseover].Sprite.Position;
+                    cosmetics[cosmetics.Count - 1].Width = 80;
+                    cosmetics[cosmetics.Count - 1].Height = 80;
+                    SpriteManager.AddSprite(cosmetics[cosmetics.Count - 1]);
+                }
+            }
         }
 
         /// <summary>
@@ -76,16 +258,17 @@ namespace TechnoViking
         {
             for (byte i = 0; i < Playercount; i++)
             {
-
-                tempplayer = new Player(game, SpriteManager.AddSprite(Game1.PlayerTexture1));
-                tempplayer.Sprite.Position.X += -16 + (i%3*16);
-                tempplayer.Sprite.Position.Y -= -14 + ((byte)(i/3) * 14);
+                Sprite tSprite = SpriteManager.AddManagedInvisibleSprite();
+                tSprite.Texture = FlatRedBallServices.Load<Texture2D>(Textures.PlayerTexture1);
+                tempplayer = new Player(game, tSprite);                
+                tempplayer.Sprite.Position.X += -300 + (i % 3 * 300);
+                tempplayer.Sprite.Position.Y -= -300 + ((byte)(i / 3) * 300);
+                SpriteManager.AddDrawableBatch(new CustomSpriteDrawableBatch(tempplayer.Sprite, GlobalData.GlobalData.Lighting));
                 PlayerList.Add(tempplayer);
-                gameObjects.Add(PlayerList[PlayerList.Count-1]);
-                Aliveplayers.Add(PlayerList[PlayerList.Count-1]);
+                gameObjects.Add(tempplayer);
+                Aliveplayers.Add(tempplayer);
+                gamestate = GameState.Playing;
             }
-
-            //playing = true;
             AssignPlayerIndices();
         }
 
@@ -97,63 +280,65 @@ namespace TechnoViking
             for (byte i = 0; i < PlayerList.Count; i++)
             {
                 PlayerList[i].Playerindex = i;
-            }
-        }
-
-        /// <summary>
-        /// Updates the game screen
-        /// </summary>
-        /// <param name="gameObjects"></param>
-        public override void Update(List<GameObject> gameObjects)
-        {
-            if (ingame)
-            {
-                if (PlayerList.Count > PlayerID) InputCheck();
-
-                ServerAndClientActivity(gameObjects);
-                foreach (Player p in Aliveplayers)
+                if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server && i != 0)
                 {
-                    PlayerMovement(p);
-                    Spellcasting(gameObjects, p);
-                    Rotation(p);
-                    SaveVariables(p);
-                    Vector3 temp = PlayerList[PlayerID].Sprite.Velocity;
+                    mAgent.WriteMessage((byte)MessageType.PlayerID);
+                    mAgent.WriteMessage((byte)i);
+                    mAgent.SendMessage(mAgent.Connections[i - 1], true);
+
                 }
-                CollisionActivity(gameObjects);
-                abilitys.Update(gameObjects, PlayerList);
             }
         }
-
         /// <summary>
         /// Resets all variables
         /// </summary>
         /// <param name="gameObjects"></param>
         private void StartNewRound(List<GameObject> gameObjects)
         {
-            foreach (Player p in PlayerList)
+            foreach (MenuButton m in PickButtons) 
             {
-                p.Kill(gameObjects);
+                SpriteManager.RemoveSprite(m.Sprite);
             }
-            foreach (GameObject g in new List<GameObject>(gameObjects)) 
-            {
-                if (g is Projectile) 
-                {
-                    g.Kill(gameObjects);
-                }
-            }
-            PlayerList.Clear();
-            Aliveplayers.Clear();
+            PickButtons.Clear();
+            SpriteManager.RemoveSpriteList(cosmetics);
             CreatePlayers(gameObjects);
             if (GlobalData.GlobalData.GameData.TypeOfGame == GlobalData.GameData.GameType.Server)
             {
-
+                foreach (Player p in PlayerList)
+                {
+                    if (p.Playerindex == 0)
+                    {
+                        p.PickedSpell[0] = pickedspell[0];
+                        p.PickedSpell[1] = pickedspell[1];
+                        p.PickedSpell[2] = pickedspell[2];
+                        p.Playerskin = playertexture;
+                    }
+                    else
+                    {
+                        p.PickedSpell[0] = mAgent.Connections[p.Playerindex - 1].pickedspell[0];
+                        p.PickedSpell[1] = mAgent.Connections[p.Playerindex - 1].pickedspell[1];
+                        p.PickedSpell[2] = mAgent.Connections[p.Playerindex - 1].pickedspell[2];
+                        p.Playerskin = mAgent.Connections[p.Playerindex - 1].PlayerTexture;
+                    }
+                }
                 foreach (NetConnection Player in mAgent.Connections)
                 {
                     mAgent.WriteMessage((byte)MessageType.Action);
                     mAgent.WriteMessage((byte)ActionType.ServerRestart);
                     mAgent.WriteMessage((byte)mAgent.Connections.Count + 1);
                     mAgent.SendMessage(Player, true);
+                    foreach (Player p in PlayerList)
+                    {
+                        mAgent.WriteMessage((byte)MessageType.Spellpicks);
+                        mAgent.WriteMessage((byte)p.Playerindex);
+                        mAgent.WriteMessage((byte)p.PickedSpell[0]);
+                        mAgent.WriteMessage((byte)p.PickedSpell[1]);
+                        mAgent.WriteMessage((byte)p.PickedSpell[2]);
+                        mAgent.WriteMessage(p.Playerskin);
+                        mAgent.SendMessage(Player, true);
+                    }
                 }
+                
             }
             roundstarted = TimeManager.CurrentTime;
             
@@ -179,6 +364,15 @@ namespace TechnoViking
 
             PlayerList[PlayerID].MouseX = GuiManager.Cursor.WorldXAt(PlayerList[PlayerID].Sprite.Z);
             PlayerList[PlayerID].MouseY = GuiManager.Cursor.WorldYAt(PlayerList[PlayerID].Sprite.Z);
+        }
+
+        private void CameraUpdate() 
+        {
+            if (PlayerList[PlayerID].keystate.IsKeyDown(Keys.LeftShift))
+            {
+            SpriteManager.Camera.Position.X = PlayerList[PlayerID].Sprite.Position.X + (PlayerList[PlayerID].MouseX - PlayerList[PlayerID].Sprite.Position.X)/2;
+            SpriteManager.Camera.Position.Y = PlayerList[PlayerID].Sprite.Position.Y + (PlayerList[PlayerID].MouseY - PlayerList[PlayerID].Sprite.Position.Y) /2;
+            }
         }
 
         /// <summary>
@@ -216,19 +410,19 @@ namespace TechnoViking
 
                 
 
-                if (p.goalVelocityX > p.Sprite.Velocity.X + 0.5f)
+                if (p.goalVelocityX > p.Sprite.Velocity.X + 10)
                 {
                     p.Sprite.Acceleration.X = accelerationspeed;
                 }
 
-                else if (p.goalVelocityX < p.Sprite.Velocity.X - 0.5f)
+                else if (p.goalVelocityX < p.Sprite.Velocity.X - 10)
                 {
                     p.Sprite.Acceleration.X = -accelerationspeed;
                 }
                 else
                 {
                     p.Sprite.Acceleration.X = 0;
-                    if (p.Sprite.Velocity.X < 1 && p.Sprite.Velocity.X > -1)
+                    if (p.Sprite.Velocity.X < 20 && p.Sprite.Velocity.X > -20)
                     {
                         p.Sprite.Velocity.X = 0;
                     }
@@ -237,19 +431,19 @@ namespace TechnoViking
 
 
                 //Y 
-                if (p.goalVelocityY > p.Sprite.Velocity.Y + 0.5f)
+                if (p.goalVelocityY > p.Sprite.Velocity.Y + 10)
                 {
                     p.Sprite.Acceleration.Y = accelerationspeed;
                 }
 
-                else if (p.goalVelocityY < p.Sprite.Velocity.Y - 0.5f)
+                else if (p.goalVelocityY < p.Sprite.Velocity.Y - 10)
                 {
                     p.Sprite.Acceleration.Y = -accelerationspeed;
                 }
                 else
                 {
                     p.Sprite.Acceleration.Y = 0;
-                    if (p.Sprite.Velocity.Y < 1 && p.Sprite.Velocity.Y > -1)
+                    if (p.Sprite.Velocity.Y < 20 && p.Sprite.Velocity.Y > -20)
                     {
                         p.Sprite.Velocity.Y = 0;
                     }
@@ -271,7 +465,7 @@ namespace TechnoViking
            
             if (p.Sprite.Velocity.X != 0 || p.Sprite.Velocity.Y != 0 && !p.RotationLocked)
             {
-                p.desiredRotation = (float)Math.Atan2(p.Sprite.Velocity.Y, p.Sprite.Velocity.X) + p.Offset;
+                p.desiredRotation = (float)Math.Atan2(p.Sprite.Velocity.Y, p.Sprite.Velocity.X);
             }
             
             if (p.desiredRotation < 0)
@@ -365,7 +559,7 @@ namespace TechnoViking
                         {
                             if (pl.CircleCollidesWith(g))
                             {
-                                if (pl.Sprite.Velocity != Vector3.Zero || g.Sprite.Velocity != Vector3.Zero) Bounce(pl, g);
+                                Bounce(pl, g);
                             }
                             
                         }
@@ -377,7 +571,7 @@ namespace TechnoViking
                     Aliveplayers.Remove(pl);
                     if (pl.Playerindex == PlayerID) 
                     {
-                        //playing = false;
+                        gamestate = GameState.Watching;
                     }
                 }
             }
@@ -453,10 +647,20 @@ namespace TechnoViking
             
             float j = -velAlongNormal;
             j /= a.InvMass + b.InvMass;
+            j *= Math.Max(a.Softness, b.Softness);
  
             Vector3 impulse = j * normal;
-            a.Sprite.Velocity -= a.InvMass * impulse * 2;
-            b.Sprite.Velocity += b.InvMass * impulse * 2;
+            a.Sprite.Velocity -= a.InvMass * impulse;
+            b.Sprite.Velocity += b.InvMass * impulse;
+
+            Vector3 posdiff = a.Sprite.Position - b.Sprite.Position;
+            float lenght = posdiff.Length() - a.Sprite.Texture.Width / 2 - b.Sprite.Texture.Width / 2;
+            lenght *= -1;
+            const float percent = 0.05f; // usually 20% to 80%
+            const float slop = 0.01f; // usually 0.01 to 0.1
+            Vector3 correction = Math.Max(lenght - slop, 0.0f) / (a.InvMass + b.InvMass) * percent * normal;
+            a.Sprite.Position -= a.InvMass * correction;
+            b.Sprite.Position += b.InvMass * correction;
                 
         }
 
@@ -565,6 +769,14 @@ namespace TechnoViking
                         break;
                     }
                     break;
+                        
+                    case (byte)MessageType.Spellpicks:
+                    Player pl = PlayerList[incomingMessage.ReadByte()];
+                    pl.PickedSpell[0] = incomingMessage.ReadByte();
+                    pl.PickedSpell[1] = incomingMessage.ReadByte();
+                    pl.PickedSpell[2] = incomingMessage.ReadByte();
+                    pl.Playerskin = incomingMessage.ReadByte();
+                        break;
 
                     case (byte)MessageType.Tick:
                     ReadActor(incomingMessage);
@@ -587,7 +799,7 @@ namespace TechnoViking
     }
 
         }
-        private void ServerActivity(List<GameObject> gameObjects)
+        private void ServerActivity(List<GameObject> gameObjects) 
         {
             List<NetIncomingMessage> incomingMessages; 
             incomingMessages = mAgent.CheckForMessages();foreach(NetIncomingMessage incomingMessage in incomingMessages)
@@ -617,18 +829,47 @@ namespace TechnoViking
                                 break;
                         }
                         break;
+                    case (byte)MessageType.Ready:
+                        incomingMessage.SenderConnection.pickedspell[0] = incomingMessage.ReadByte();
+                        incomingMessage.SenderConnection.pickedspell[1] = incomingMessage.ReadByte();
+                        incomingMessage.SenderConnection.pickedspell[2] = incomingMessage.ReadByte();
+                        incomingMessage.SenderConnection.PlayerTexture = incomingMessage.ReadByte();
+                        incomingMessage.SenderConnection.Ready = true;
+
+                        break;
                 }
 		    }
 	        
             //Server only logic
-            if (Aliveplayers.Count < 2 && mAgent.Connections.Count > 0)
+            //if (Aliveplayers.Count < 2 && mAgent.Connections.Count > 0)
+            //{
+            //    LoadPick(gameObjects);
+            //    foreach (NetConnection Player in mAgent.Connections)
+            //    {
+            //        Player.Ready = false;
+            //    }
+            //}
+            bool clientsready = true;
+            foreach (NetConnection Player in mAgent.Connections)
+            {
+                if (!Player.Ready) 
+                {
+                    clientsready = false;
+                }
+            }
+            if (ready && clientsready && mAgent.Connections.Count > 0 && gamestate != GameState.Playing)
             {
                 StartNewRound(gameObjects);
+                ready = false;
+                foreach (NetConnection Player in mAgent.Connections)
+                {
+                    Player.Ready = false;
+                }
             }
-            
             //Send the message to each player (client)
             foreach (NetConnection Player in mAgent.Connections)
             {
+                
                 for (byte i = 0; i < PlayerList.Count; i++)
                 {
                     
@@ -763,7 +1004,7 @@ namespace TechnoViking
             gameObjects.Remove(this);
         }
 
-        public override void SendState(NetworkAgent mAgent)
+        public override void SendState(NetworkAgent mAgent) 
         {
         }
 

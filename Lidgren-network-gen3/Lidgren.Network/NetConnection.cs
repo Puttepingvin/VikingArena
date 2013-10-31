@@ -39,6 +39,16 @@ namespace Lidgren.Network
 			set { m_tag = value; }
 		}
 
+        public bool Ready
+        {
+            get;
+            set;
+        }
+
+        public byte[] pickedspell = new byte[3] { 0, 0, 0 };
+
+        public byte PlayerTexture = 0;
+
 		/// <summary>
 		/// Gets the peer which holds this connection
 		/// </summary>

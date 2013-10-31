@@ -22,6 +22,9 @@ namespace TechnoViking.GlobalData
         PlayerID,
         Tick,
         Stop,
+        Ready,
+        Spellpicks,
+
     }
 
 

@@ -6,6 +6,7 @@ using FlatRedBall.Graphics;
 using FlatRedBall.Utilities;
 using FlatRedBall.Graphics.Animation;
 using Microsoft.Xna.Framework;
+using TechnoViking.GlobalData;
 #if !FRB_MDX
 using System.Linq;
 
@@ -36,7 +37,7 @@ namespace TechnoViking
         Random rng = new Random();
         float frequency;
         float lastparticlecreated;
-        const float particlespeed = 5.0f;
+        const float particlespeed = 100f;
         float emmissionduration;
         float particlecount;
         float anglemin;
@@ -151,7 +152,7 @@ namespace TechnoViking
                     break;
             }
             particlecreatedcount++;
-            Sprite particlesprite = SpriteManager.AddSprite(Game1.Pixeltexture);
+            Sprite particlesprite = SpriteManager.AddSprite(Textures.Pixeltexture);
             particlesprite.Red = thiscolor.R / 255;
             particlesprite.Green = thiscolor.G / 255;
             particlesprite.Blue = thiscolor.B / 255;

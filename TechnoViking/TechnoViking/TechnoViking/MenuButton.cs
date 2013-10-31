@@ -26,15 +26,12 @@ namespace TechnoViking
     {
         
         Sprite sprite;
-        Player player1;
-        Menuscreen screen;
 
-        public MenuButton(Game game, Sprite sprite, float buttonindex, Menuscreen screen)
+        public MenuButton(Game game, Sprite sprite, byte buttonindex)
             : base(game, sprite) 
         {
             this.sprite = sprite;
             this.Buttonindex = buttonindex;
-            this.screen = screen;
             float texturePixelWidth = sprite.Texture.Width;
             float texturePixelHeight = sprite.Texture.Height;
 
@@ -62,17 +59,7 @@ namespace TechnoViking
             else return false;
         }
 
-        
-
-        private void LoadGame(List<GameObject> gameObjects) //move to menuscreen
-        {
-            player1 = new Player(game, SpriteManager.AddSprite(Game1.PlayerTexture1));
-            gameObjects.Add(player1);
-            player1.Sprite.ScaleX = 1.3f;
-            player1.Sprite.ScaleY = 1.3f;
-        }
-
-        public float Buttonindex
+        public byte Buttonindex
         {
             get;
             set;

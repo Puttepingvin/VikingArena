@@ -27,6 +27,8 @@ namespace TechnoViking
         protected Game game;
         private Sprite sprite = new Sprite();
         private float mass;
+        private float radius;
+        private float softness = 2;
 
         public GameObject(Game game, Sprite sprite)
         {
@@ -37,16 +39,8 @@ namespace TechnoViking
 
             if (sprite != null)
                 {
-                   
-                    float texturePixelWidth = sprite.Texture.Width;
-                    float texturePixelHeight = sprite.Texture.Height;
 
-                    //Now, we need to find out how many pixels per unit there are in our view at the Sprite's Z position:
-                    float pixelsPerUnit = SpriteManager.Camera.PixelsPerUnitAt(sprite.Z);
-
-                    //Now, we just have to use those two values to set the scale.
-                    sprite.ScaleX = .5f * texturePixelWidth / pixelsPerUnit;
-                    sprite.ScaleY = .5f * texturePixelHeight / pixelsPerUnit;
+                    Pixelsieze();
                 }
             //if (this is Actor)
             //{
@@ -74,12 +68,29 @@ namespace TechnoViking
         
         //ENetRole RemoteRole, Role;
 
-        
+        public void Pixelsieze() 
+        {
+            float texturePixelWidth = sprite.Texture.Width;
+            float texturePixelHeight = sprite.Texture.Height;
+
+            //Now, we need to find out how many pixels per unit there are in our view at the Sprite's Z position:
+            float pixelsPerUnit = SpriteManager.Camera.PixelsPerUnitAt(sprite.Z);
+
+            //Now, we just have to use those two values to set the scale.
+            sprite.ScaleX = .5f * texturePixelWidth / pixelsPerUnit;
+            sprite.ScaleY = .5f * texturePixelHeight / pixelsPerUnit;
+        }
         
         public Sprite Sprite
         {
             get { return sprite; }
             set { sprite = value; }
+        }
+
+        public float Softness
+        {
+            get { return softness; }
+            set { softness = value; }
         }
 
         public float InvMass 
@@ -98,24 +109,25 @@ namespace TechnoViking
 
         public bool CircleCollidesWith(GameObject gameobject)
         {
-            return CircleCollidesWith(gameobject, gameobject.Sprite.Texture.Width, sprite.Texture.Width);
+            return CircleCollidesWith(gameobject, Math.Max(gameobject.Sprite.Height, gameobject.Sprite.Width), Math.Max(Sprite.Height, Sprite.Width));
         }
 
         public bool CircleCollidesWith(GameObject gameobject, float r1, float r2) 
         {
-            float pixelsPerUnit = SpriteManager.Camera.PixelsPerUnitAt(sprite.Z);
             float distancesquared;
-            float distanceX = sprite.Position.X - gameobject.Sprite.Position.X;
-            float distanceY = sprite.Position.Y - gameobject.Sprite.Position.Y;
-            distancesquared = distanceX*distanceX + distanceY*distanceY;
+            float distanceX = sprite.Position.X - gameobject.Sprite.Position.X; 
+            float distanceY = sprite.Position.Y - gameobject.Sprite.Position.Y; 
+            distancesquared = distanceX *distanceX + distanceY * distanceY;
 
 
-            if ((r1 / pixelsPerUnit / 2) * (r1 / pixelsPerUnit / 2) + (r2 / pixelsPerUnit / 2) * (r2 / pixelsPerUnit / 2) > distancesquared)
+            if (((r1 / 2 ) * (r1 / 2))*2 + ((r2 / 2) * (r2 / 2))*2 > distancesquared)
             {
             return true;
             }
             else return false;
         }
+
+        
 
         public abstract void Update(List<GameObject> gameObjects);
 

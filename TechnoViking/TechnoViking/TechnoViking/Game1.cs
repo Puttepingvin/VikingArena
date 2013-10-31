@@ -40,25 +40,12 @@ namespace TechnoViking
          */
 
 
-
         GraphicsDeviceManager graphics; //Needed to draw things to screen
-
+        Effect lighting;
         List<GameObject> gameObjects; //Saves all the things you see in the game
 
 
-        /// <summary>
-        /// Saves all the references to external content
-        /// </summary>
-        public const string PlayerTexture1 = "/Content/viking1.png";
-        public const string Shadowbolttexture1 = "/Content/viking1.png";
-        public const string Fireballtexture1 = "/Content/fireball.png";
-        public const string Beamtexture1 = "/Content/Beam.png";
-        public const string Castingtexture1 = "/Content/fireball.png";
-        public const string Pixeltexture = "/Content/pixel.png";
-        public const string MenuButtonTexture1 = "/Content/menubutton1.png";
-        public const string MenuButtonTexture2 = "/Content/menubutton2.png";
-        public const string MenuButtonTexture3 = "/Content/menubutton3.png";
-        public const string GameFont = "/Content/GameFont.xml";
+
 
 
         Menuscreen mainmenu; //The menu class
@@ -70,6 +57,7 @@ namespace TechnoViking
             Content.RootDirectory = "Content"; //Specifies what folder the external content is located in
             graphics.PreferredBackBufferHeight = 720; //sets the height of the window
             graphics.PreferredBackBufferWidth = 1080;//sets the width of the window
+
         }
 
         protected override void Initialize() //Runs when the game starts, after the constructor
@@ -80,21 +68,33 @@ namespace TechnoViking
             FlatRedBallServices.InitializeFlatRedBall(this, graphics);
             FlatRedBallServices.Game.IsMouseVisible = true;
 
+            SpriteManager.Camera.UsePixelCoordinates();
+
             //Creates the menuclass
             mainmenu = new Menuscreen(this, null, gameObjects);
             gameObjects.Add(mainmenu);
             //Creates the global data
-            GlobalData.GlobalData.Initialize();
-            
+            GlobalData.GlobalData.Initialize(this);
+
+            lighting = Content.Load<Effect>("Lighting");
             
             //Content.RootDirectory = "Content"; 
 
             GlobalData.GlobalData.keyboardDispatcher = new KeyboardDispatcher(this.Window); //Initializes the 
-            
-            //GlobalData.GlobalData.Font = Content.Load<SpriteFont>(GameFont);
-                
-            //ScreenManager.Start(typeof(SomeScreen).FullName);
-               
+
+
+            //Sprite testlight = SpriteManager.AddManagedInvisibleSprite();
+            //testlight.Texture = FlatRedBallServices.Load<Texture2D>("/content/blue.jpg");
+            //SpriteManager.AddDrawableBatch(new CustomSpriteDrawableBatch(testlight, GlobalData.GlobalData.Lighting));
+            //float texturePixelWidth = testlight.Texture.Width;
+            //float texturePixelHeight = testlight.Texture.Height;
+
+            ////Now, we need to find out how many pixels per unit there are in our view at the Sprite's Z position:
+            //float pixelsPerUnit = SpriteManager.Camera.PixelsPerUnitAt(testlight.Z);
+
+            ////Now, we just have to use those two values to set the scale.
+            //testlight.ScaleX = .5f * texturePixelWidth / pixelsPerUnit;
+            //testlight.ScaleY = .5f * texturePixelHeight / pixelsPerUnit;
             base.Initialize();
         }
 
@@ -117,6 +117,17 @@ namespace TechnoViking
 
         protected override void Draw(GameTime gameTime)
         {
+            //GraphicsDevice.Clear(Color.CornflowerBlue);
+            //spriteBatch.Begin();
+
+            //foreach (Sprite s in SpriteManager.OrderedSprites)
+            //{
+            //    spriteBatch.Draw(s.Texture, new Vector2(s.Position.X, s.Position.Y), Color.White);
+            //}
+
+            //spriteBatch.End();
+                        
+            
             FlatRedBallServices.Draw(); //Draws everything in the spritemanager
 
             base.Draw(gameTime);

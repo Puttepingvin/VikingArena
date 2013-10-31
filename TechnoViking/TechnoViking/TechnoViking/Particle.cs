@@ -33,8 +33,8 @@ namespace TechnoViking
         {
             this.life = life;
             this.sprite = sprite;
-            sprite.ScaleX = 0.15f;
-            sprite.ScaleY = 0.15f;
+            sprite.Width = 5;
+            sprite.Height = 5;
         }
         
         

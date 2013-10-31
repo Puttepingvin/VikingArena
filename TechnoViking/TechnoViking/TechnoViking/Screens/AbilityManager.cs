@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using FlatRedBall;
 using FlatRedBall.Graphics;
 using FlatRedBall.Utilities;
-
+using TechnoViking.GlobalData;
 using Microsoft.Xna.Framework;
 #if !FRB_MDX
 using System.Linq;
@@ -27,7 +27,7 @@ namespace TechnoViking
     {
         //Ska man synka abilitymanagern när man tickar?
         float[] cooldowns = new float[3] { 0.5f, 1, 5 };
-        float blinkdistance = 10.0f;
+        float blinkdistance = 200.0f;
 
         List<Projectile> projectileList = new List<Projectile>(); 
         Game mgame;
@@ -56,13 +56,13 @@ namespace TechnoViking
             {
                 player.RotationLocked = true;
                 player.desiredRotation = (float)Math.Atan2(
-                player.MouseY - player.Sprite.Y, player.MouseX - player.Sprite.X) + player.Offset;
+                player.MouseY - player.Sprite.Y, player.MouseX - player.Sprite.X);
                 switch (spellindex)
                 {
                     case 0:
                         tempsprite = new Sprite();
                         tempsprite.TimeCreated = TimeManager.CurrentTime;
-                        texture = FlatRedBallServices.Load<Texture2D>(Game1.Fireballtexture1);
+                        texture = FlatRedBallServices.Load<Texture2D>(Textures.Fireballtexture1);
                         tempsprite.Texture = texture;
                         tempprojectile = new Projectile(mgame, tempsprite, player, spellindex, gameObjects, player.MouseX, player.MouseY);
                         projectileList.Add(tempprojectile);
@@ -70,15 +70,15 @@ namespace TechnoViking
                     case 1:
                         tempsprite = new Sprite();
                         tempsprite.TimeCreated = TimeManager.CurrentTime;
-                        texture = FlatRedBallServices.Load<Texture2D>(Game1.Fireballtexture1);
+                        texture = FlatRedBallServices.Load<Texture2D>(Textures.Fireballtexture1);
                         tempsprite.Texture = texture;
                         tempprojectile = new Projectile(mgame, tempsprite, player, spellindex, gameObjects, player.MouseX, player.MouseY);
                         projectileList.Add(tempprojectile);
                         break;
                     case 2:
                         float angle = 
-                        player.Sprite.Position.X += blinkdistance * (float)Math.Cos(player.desiredRotation - player.Offset);
-                        player.Sprite.Position.Y += blinkdistance * (float)Math.Sin(player.desiredRotation - player.Offset);
+                        player.Sprite.Position.X += blinkdistance * (float)Math.Cos(player.desiredRotation);
+                        player.Sprite.Position.Y += blinkdistance * (float)Math.Sin(player.desiredRotation);
                         player.Lastcasted[spellindex] = TimeManager.CurrentTime;
                         player.RotationLocked = false; 
                         break;
